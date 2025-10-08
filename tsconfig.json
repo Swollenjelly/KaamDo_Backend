@@ -51,7 +51,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": [ "src/**/*.ts"],
+  "include": [ "src/**/*.ts", "src/**/*.d.ts"],
 }

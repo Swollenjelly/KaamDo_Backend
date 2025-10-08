@@ -33,5 +33,5 @@ export class User {
         gender!: gender;
 
     @Column()
-    location!: String;
+    location!: string;
 }

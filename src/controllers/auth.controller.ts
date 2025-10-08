@@ -88,11 +88,13 @@ export const authenticationController = {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const token = jwt.sign(
-        { sub: user.id},
-        ENV.JWT_SECRET,
-        { expiresIn: "2h" }
-      );
+      // Put the id into the standard subject (as string)
+const token = jwt.sign(
+  {},                                  // no custom payload needed
+  ENV.JWT_SECRET,
+  { subject: String(user.id), expiresIn: "2h" }
+);
+
 
       res.status(200).json({
         message: "User logged in successfully",
@@ -113,7 +115,7 @@ export const authenticationController = {
   // inside authenticationController
 async deleteuser(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.userId;
+    const userId = req.body.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const userRepo = AppDataSource.getRepository(User);
@@ -131,12 +133,46 @@ async deleteuser(req: Request, res: Response, next: NextFunction) {
 },
 
 async updateuser(req: Request, res: Response, next: NextFunction) {
-    // try {
-    //   const { phone, name, email, password } = req.body;
-    //   const user = await AuthService.updateuser(phone, name, email, password);
-    //   res.status(200).json({ message: "User updated successfully", data: user });
-    // } catch (error) {
-    //   next(error);
-    // }
+  try {
+    const userId = req.body.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { name, phone, email, password, gender, location } = req.body;
+
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (email) user.email = email;
+    if (gender) user.gender = gender;
+    if (location) user.location = location;
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+      user.passwordHash = passwordHash;
+    }
+
+    await userRepo.save(user);
+
+    return res.status(200).json({
+      message: "User updated successfully",
+      data: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        gender: user.gender,
+        location: user.location,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 }
+
 };

@@ -20,28 +20,27 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env as ENV } from "../config/env";
 
-// Shape of the token you issued in login(): { sub: user.id, ... }
-interface JwtClaims {
-  sub: number; // user id
-  iat: number;
-  exp: number;
-}
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  console.log("requireAuth called");
+  console.log("Headers:", req.headers);
+  
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer ")) {
+  if (!auth?.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Missing or invalid Authorization header" });
   }
 
-  const token = auth.slice("Bearer ".length);
-  try {
-    const payload = jwt.verify(token, ENV.JWT_SECRET) as JwtClaims;
-    req.userId = payload.sub; // set from JWT "sub"
-    return next();
-  } catch (err: any) {
-    if (err?.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired" });
-    }
-    return res.status(401).json({ message: "Invalid token" });
+  
+
+  const token = auth.slice(7);
+  const payload = jwt.verify(token, ENV.JWT_SECRET) as jwt.JwtPayload; // sub?: string
+
+  const userId = Number(payload.sub);
+  if (!payload.sub || Number.isNaN(userId)) {
+    return res.status(401).json({ message: "Invalid token payload" });
   }
+
+  req.body.userId = userId;
+  return next();
 }
+
