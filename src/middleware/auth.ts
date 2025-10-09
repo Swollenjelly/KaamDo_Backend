@@ -24,7 +24,7 @@ import { env as ENV } from "../config/env";
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   console.log("requireAuth called");
   console.log("Headers:", req.headers);
-  
+  req.header
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Missing or invalid Authorization header" });
@@ -40,7 +40,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ message: "Invalid token payload" });
   }
 
-  req.body.userId = userId;
+ (req as any).userId = userId;
   return next();
 }
 

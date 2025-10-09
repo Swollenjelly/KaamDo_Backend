@@ -115,7 +115,7 @@ const token = jwt.sign(
   // inside authenticationController
 async deleteuser(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.body.userId;
+    const userId = (req as any).userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const userRepo = AppDataSource.getRepository(User);
@@ -133,8 +133,11 @@ async deleteuser(req: Request, res: Response, next: NextFunction) {
 },
 
 async updateuser(req: Request, res: Response, next: NextFunction) {
+  console.log("updateuser called");
+  console.log("Request body:", req.body);
+  console.log("User ID from request:", (req as any).userId);
   try {
-    const userId = req.body.userId;
+    const userId = (req as any).userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const { name, phone, email, password, gender, location } = req.body;
