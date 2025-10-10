@@ -10,10 +10,10 @@ import { JobItem } from "../entities/job-item";
 const createSchema = z.object({
   name: z.string().min(2).max(150),
   slug: z.string().min(2).max(180),
-  kind: z.enum(["type", "task"]),
+  kind: z.enum(["category", "sub-category"]),
   parentId: z.number().int().positive().optional(),
   is_active: z.boolean().optional()
-}).refine((v) => v.kind === "type" || (v.kind === "task" && !!v.parentId), {
+}).refine((v) => v.kind === "category" || (v.kind === "sub-category" && !!v.parentId), {
   message: "parentId is required when kind='task'",
   path: ["parentId"]
 });
@@ -27,10 +27,10 @@ export const jobController = {
       console.log("Creating job itme with the given data:", { name, slug, kind, parentId, is_active });
 
       let parent: JobItem | null = null;
-      if (kind === "task") {
+      if (kind === "sub-category") {
         parent = await repo.findOne({ where: { id: parentId! } });
         if (!parent) return res.status(400).json({ message: "Invalid parentId" });
-        if (parent.kind !== "type") return res.status(400).json({ message: "parentId must reference a type" });
+        if (parent.kind !== "category") return res.status(400).json({ message: "parentId must reference a category" });
       }
 
       const item = repo.create({ name, slug, kind, parent, is_active });

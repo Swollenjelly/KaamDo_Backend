@@ -3,7 +3,7 @@ import {
   ManyToOne, OneToMany, Index, Unique
 } from "typeorm";
 
-type Kind = 'type' | 'task';
+type Kind = 'category' | 'sub-category';
 
 @Entity({ name: "job_items" })
 @Unique(["parent", "name"])
@@ -30,7 +30,7 @@ export class JobItem {
 
   @Index()
   @Column({ type: "text" })
-  kind!: Kind; // 'type' | 'task'
+  kind!: Kind; // category | sub-category
 
   @Index()
   @Column({ type: "boolean", default: true })

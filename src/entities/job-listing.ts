@@ -1,0 +1,84 @@
+// import {
+//   Entity, PrimaryGeneratedColumn, Column,
+//   ManyToOne, OneToMany, Index, Unique
+// } from "typeorm";
+// import { JobItem } from "./job-item";
+
+// export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled';
+
+// @Entity({ name: "job_listings" })
+// @Unique(["slug"])
+// export class JobListing {
+//   @PrimaryGeneratedColumn()
+//   id!: number;
+   
+//   @Column({ type: "text" })
+//     kind!: Kind;
+
+//     @Column({ type: "varchar", length: 200 })
+//     description!: string;
+
+//     @Column({ type: "varchar", length: 180 })
+//     phone!: string;
+
+//     @Column({ type: "varchar", length: 180 })
+//     location!: string;
+
+//     @Column({ type: "varchar", length: 180 })
+//     preferred_amount!: string;
+
+//     @Column({ type: "varchar", length: 180 })
+//     images!: string;
+
+//     @ManyToOne(() => JobItem, { nullable: false })
+//     @Index()
+//     job_item!: JobItem;
+// }
+
+
+
+
+// src/entities/job-post.ts
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import { User } from "./user";
+import { JobItem } from "./job-item";
+
+export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled'|'draft';
+
+@Entity({ name: "job_posts" })
+export class JobPost {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @ManyToOne(() => User, { nullable: false, onDelete: "CASCADE" })
+  @Index()
+  user!: User;
+
+  @ManyToOne(() => JobItem, { nullable: false })
+  @Index()
+  job_task!: JobItem; // must be kind='task'
+
+  @Column({ type: "text", nullable: true })
+  details!: string | null;
+
+  @Column({ type: "numeric", precision: 12, scale: 2, nullable: true })
+  budget_amount!: string | null;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  city!: string | null;
+
+  @Column({ type: "varchar", length: 10, nullable: true })
+  pincode!: string | null;
+
+//   @Column({ type: "timestamptz", nullable: true })
+//   scheduled_at!: Date | null;
+
+  @Column({ type: "text", default: "open" })
+  status!: JobStatus;
+
+//   @CreateDateColumn({ type: "timestamptz" })
+//   created_at!: Date;
+
+//   @UpdateDateColumn({ type: "timestamptz" })
+//   updated_at!: Date;
+}
