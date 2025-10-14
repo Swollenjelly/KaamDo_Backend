@@ -6,8 +6,8 @@ export enum VendorType {
 }
 
 export enum PreferredWorkLocation {
-    inside = "inside",
-    outside = "outside",
+    inside = "inside_city",
+    outside = "outside_city",
     both = "both",
 }
 
