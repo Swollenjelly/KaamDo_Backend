@@ -13,4 +13,8 @@ router.post("/job-item", jobController.createJobitem);
 router.post("/createJob", requireAuth, customerController.createJob);    
 // router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
 
+// vendor routes 
+router.post("/vendorRegister", authenticationController.registerVendor)
+router.post("/vendorLogin", authenticationController.loginVendor)
+
 export default router;
