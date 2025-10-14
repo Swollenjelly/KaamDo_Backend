@@ -38,15 +38,14 @@
 
 
 
-// src/entities/job-post.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
 import { User } from "./user";
 import { JobItem } from "./job-item";
 
 export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled'|'draft';
 
-@Entity({ name: "job_posts" })
-export class JobPost {
+@Entity({ name: "job_listings" })
+export class JobListings {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -56,7 +55,7 @@ export class JobPost {
 
   @ManyToOne(() => JobItem, { nullable: false })
   @Index()
-  job_task!: JobItem; // must be kind='task'
+  job_item!: JobItem;
 
   @Column({ type: "text", nullable: true })
   details!: string | null;

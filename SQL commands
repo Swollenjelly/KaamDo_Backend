@@ -1,0 +1,4 @@
+SELECT * FROM public.job_items
+ORDER BY id ASC ;
+UPDATE job_items SET kind='category'     WHERE kind='type';
+UPDATE job_items SET kind='sub-category' WHERE kind='task';

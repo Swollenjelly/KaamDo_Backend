@@ -178,4 +178,8 @@ async updateuser(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+
+
+// Vendor related controllers can be added here
+
 };
