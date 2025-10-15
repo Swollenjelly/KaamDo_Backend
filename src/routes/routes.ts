@@ -16,5 +16,6 @@ router.post("/createJob", requireAuth, customerController.createJob);
 // vendor routes 
 router.post("/vendorRegister", authenticationController.registerVendor)
 router.post("/vendorLogin", authenticationController.loginVendor)
+router.post("/vendorDelete", authenticationController.deleteVendor)
 
 export default router;

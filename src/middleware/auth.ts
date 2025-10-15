@@ -22,25 +22,25 @@ import { env as ENV } from "../config/env";
 
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  console.log("requireAuth called");
-  console.log("Headers:", req.headers);
-  req.header
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Missing or invalid Authorization header" });
-  }
+	console.log("requireAuth called");
+	console.log("Headers:", req.headers);
+	req.header
+	const auth = req.headers.authorization;
+	if (!auth?.startsWith("Bearer ")) {
+		return res.status(401).json({ message: "Missing or invalid Authorization header" });
+	}
 
-  
+	
 
-  const token = auth.slice(7);
-  const payload = jwt.verify(token, ENV.JWT_SECRET) as jwt.JwtPayload; // sub?: string
+	const token = auth.slice(7);
+	const payload = jwt.verify(token, ENV.JWT_SECRET) as jwt.JwtPayload; // sub?: string
 
-  const userId = Number(payload.sub);
-  if (!payload.sub || Number.isNaN(userId)) {
-    return res.status(401).json({ message: "Invalid token payload" });
-  }
+	const userId = Number(payload.sub);
+	if (!payload.sub || Number.isNaN(userId)) {
+		return res.status(401).json({ message: "Invalid token payload" });
+	}
 
- (req as any).userId = userId;
-  return next();
+	(req as any).userId = userId;
+	return next();
 }
 

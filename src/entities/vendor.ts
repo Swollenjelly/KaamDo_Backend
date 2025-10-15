@@ -1,29 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-export enum VendorType {
-    individual = "individual",
-    company = "company"
-}
+export type gender = "male" | "female" | "other";
 
-export enum PreferredWorkLocation {
-    inside = "inside_city",
-    outside = "outside_city",
-    both = "both",
-}
+export type PreferredWorkLocation = "inside" | "outside" | "both"
 
-export enum gender {
-    male = "male",
-    female = "female",
-    other = "other"
-}
+export type VendorType = "individual" | "company"
 
-export enum DocumentType {
-    aadhar = "aadhar",
-    pan = "pan",
-    driving_license = "driving_license",
-    voter_id = "voter_id",
-    passport = "passport"
-}
+export type DocumentType = "aadhar" | "pan" | "driving_license" | "voter_id" | "passport"
 
 @Entity("vendors")
 export class Vendor {
@@ -36,15 +19,15 @@ export class Vendor {
     @Column({ type: "varchar", unique: true })
     phone!: string;
 
-    @Column({ nullable: true })
-    email!: string;
+    @Column({ type: "varchar", length: 100, nullable: true })
+    email!: string|null;
 
     @Column()
     password!: string;
 
     @Column({
         type: "enum",
-        enum: gender,
+        enum: ["male", "female", "other"],
     })
     gender!: gender;
 
@@ -53,21 +36,19 @@ export class Vendor {
 
     @Column({
         type: "enum",
-        enum: PreferredWorkLocation,
-        default: PreferredWorkLocation.both,
+        enum: ["inside", "outside", "both"]
     })
     preferredWorkLocation!: PreferredWorkLocation;
 
     @Column({
         type: "enum",
-        enum: VendorType,
-        default: VendorType.individual,
+        enum: ["individual", "company"],
     })
     vendorType!: VendorType;
 
     @Column({
         type: "enum",
-        enum: DocumentType,
+        enum: ["aadhar" ,"pan" , "driving_license" , "voter_id" , "passport"]
     })
     documentType!: DocumentType;
     
