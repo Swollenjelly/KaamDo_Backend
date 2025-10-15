@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
 export enum VendorType {
-    INDIVIDUAL = "individual",
-    COMPANY = "company"
+    individual = "individual",
+    company = "company"
 }
 
 export enum PreferredWorkLocation {
@@ -12,17 +12,17 @@ export enum PreferredWorkLocation {
 }
 
 export enum gender {
-    MALE = "male",
-    FEMALE = "female",
-    OTHER = "other"
+    male = "male",
+    female = "female",
+    other = "other"
 }
 
 export enum DocumentType {
-    AADHAR = "aadhar",
-    PAN = "pan",
-    DRIVING_LICENSE = "driving_license",
-    VOTER_ID = "voter_id",
-    PASSPORT = "passport"
+    aadhar = "aadhar",
+    pan = "pan",
+    driving_license = "driving_license",
+    voter_id = "voter_id",
+    passport = "passport"
 }
 
 @Entity("vendors")
@@ -49,7 +49,7 @@ export class Vendor {
     gender!: gender;
 
     @Column()
-    location!: number;
+    location!: string;
 
     @Column({
         type: "enum",
@@ -61,7 +61,7 @@ export class Vendor {
     @Column({
         type: "enum",
         enum: VendorType,
-        default: VendorType.INDIVIDUAL,
+        default: VendorType.individual,
     })
     vendorType!: VendorType;
 

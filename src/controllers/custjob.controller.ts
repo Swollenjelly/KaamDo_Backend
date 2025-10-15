@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { AppDataSource } from "../config/data-source";
-import { JobPost } from "../entities/job-listing";
-import { JobItem } from "../entities/job-item"; // adjust path if it's job-items.ts
+import { JobListings } from "../entities/job-listing";
+import { JobItem } from "../entities/job-item";
 
 // ---------- Zod Schemas ----------
 const createSchema = z.object({
@@ -20,7 +20,6 @@ function toDateOrNull(s?: string) {
 }
 
 export const customerController = {
-  /** Create a new job post (user → job_task/sub-category) */
   async createJob(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).userId as number | undefined;
@@ -29,30 +28,28 @@ export const customerController = {
       const body = createSchema.parse(req.body);
 
       const jobItemRepo = AppDataSource.getRepository(JobItem);
-      const task = await jobItemRepo.findOne({
+      const item = await jobItemRepo.findOne({
         where: { id: body.jobTaskId },
         relations: { parent: true },
       });
-      if (!task) return res.status(400).json({ message: "Invalid jobTaskId" });
+      if (!item) return res.status(400).json({ message: "Invalid jobTaskId" });
 
-      // Accept either naming: 'sub-category' (your current) or 'task' (older)
-      if (task.kind !== "sub-category") {
+      if (item.kind !== "sub-category") {
         return res.status(400).json({ message: "jobTaskId must reference a sub-category (task)" });
       }
-      if (!task.parent) {
+      if (!item.parent) {
         return res.status(400).json({ message: "Selected task has no parent category" });
       }
 
-      // after loading `task`
-if (!task.parent || !["task", "sub-category"].includes(task.kind)) {
+if (!item.parent || !["sub-category"].includes(item.kind)) {
   return res.status(400).json({ message: "jobTaskId must reference a sub-category (task)" });
 }
 
 
-      const postRepo = AppDataSource.getRepository(JobPost);
-      const post = postRepo.create({
+      const listingRepo = AppDataSource.getRepository(JobListings);
+      const listing = listingRepo.create({
         user: { id: userId } as any,
-        job_task: task,
+        job_item: item,
         details: body.details ?? null,
         budget_amount: body.budget_amount != null ? body.budget_amount.toString() : null,
         city: body.city ?? null,
@@ -60,14 +57,14 @@ if (!task.parent || !["task", "sub-category"].includes(task.kind)) {
         // scheduled_at: toDateOrNull(req.body.scheduled_at),
         status: "open",
       });
-      await postRepo.save(post);
+      await listingRepo.save(listing);
 
       return res.status(201).json({
         message: "Job created",
         data: {
-          id: post.id,
-          status: post.status,
-          jobTask: { id: task.id, name: task.name, categoryId: task.parent.id, categoryName: task.parent.name },
+          id: listing.id,
+          status: listing.status,
+          jobTask: { id: item.id, name: item.name, categoryId: item.parent.id, categoryName: item.parent.name },
         },
       });
     } catch (err) {
