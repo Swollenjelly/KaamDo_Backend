@@ -1,8 +1,14 @@
 import { Router } from "express";
+
+// all the "user" controller here
 import { authenticationController } from "../controllers/auth.controller";
+
+// all the "vendor" controller here 
+import { vendorController } from "../controllers/vendorController";
 import { requireAuth } from "../middleware/auth";
 import {jobController} from "../controllers/job.controller";
 import { customerController } from "../controllers/custjob.controller";
+import { vendorAuth } from "../middleware/vendorAuth";
 
 const router = Router();
 router.post("/register", authenticationController.register);
@@ -14,9 +20,8 @@ router.post("/createJob", requireAuth, customerController.createJob);
 // router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
 
 // vendor routes 
-router.post("/vendorRegister", authenticationController.registerVendor)
-router.post("/vendorLogin", authenticationController.loginVendor)
-router.post("/vendorDelete", authenticationController.deleteVendor)
-router.post("/vendorDelete", authenticationController.deleteVendor)
+router.post("/vendorRegister", vendorController.registerVendor)
+router.post("/vendorLogin", vendorController.loginVendor)
+router.post("/vendorDelete", vendorAuth, vendorController.deleteVendor)
 
 export default router;
