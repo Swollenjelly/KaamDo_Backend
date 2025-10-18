@@ -5,6 +5,7 @@ import { Vendor } from "../entities/vendor";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt"
+import { appendFile } from "fs";
 
 
 const vendorRegisterSchema = z.object({
@@ -137,5 +138,52 @@ export const vendorController = {
     },
     
     // vendor data update controller 
+    async updateVendor(req:Request, res:Response, next:NextFunction){
+
+        try {
+            
+            // get the user id 
+            const vendorId = (req as any).vendorId
+            if(!vendorId){
+                return res.status(400).json({
+                    message: "Invalid request"
+                })
+            }
+
+            const {name, phone, email, password, gender, location, preferredWorkLocation, vendorType, documentType} = req.body
+
+            const vendorRepo = AppDataSource.getRepository(Vendor)
+            const vendor = await vendorRepo.findOne({ where : {id: vendorId}})
+            if(!vendor){
+                return res.status(400).json({
+                    message: "Invalid request"
+                })
+            }
+
+            if (name) vendor.name = name;
+            if (phone) vendor.phone = phone;
+            if (email) vendor.email = email;
+            if (password){
+                const hashPass = await bcrypt.hash(password, 10)
+                vendor.password = hashPass
+            } // ideally hash before saving
+            if (gender) vendor.gender = gender;
+            if (location) vendor.location = location;
+            if (preferredWorkLocation) vendor.preferredWorkLocation = preferredWorkLocation;
+            if (vendorType) vendor.vendorType = vendorType;
+            if (documentType) vendor.documentType = documentType;
+
+            await vendorRepo.save(vendor)
+
+            return res.status(200).json({
+                data: vendor
+            })
+
+        } catch (error) {
+            
+                next(error)
+        }
+
+    }
      
 }
