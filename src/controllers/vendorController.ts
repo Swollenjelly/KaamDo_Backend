@@ -5,8 +5,6 @@ import { Vendor } from "../entities/vendor";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt"
-import { appendFile } from "fs";
-
 
 const vendorRegisterSchema = z.object({
     name: z.string().min(3).max(30),
