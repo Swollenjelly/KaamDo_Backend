@@ -1,4 +1,4 @@
-import { z, email } from "zod";
+import { z } from "zod";
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Vendor } from "../entities/vendor";
@@ -9,7 +9,7 @@ import bcrypt from "bcrypt"
 const vendorRegisterSchema = z.object({
     name: z.string().min(3).max(30),
     phone: z.string().min(10).max(10),
-    email: z.email().optional(),
+    email: z.string().optional().transform(val => val === "" ? null : val),
     password: z.string().min(1).max(100),
     gender: z.enum(["male", "female", "other"]),
     location: z.string(),
@@ -55,7 +55,7 @@ export const vendorController = {
         if (existingVendor) {
             return res
             .status(409)
-            .json({ message: "This vendor already exists please login" });
+            .json({ message: "Vendor with this phone number already exists" });
         }
 
         const hashedPass = await bcrypt.hash(password, 10);
