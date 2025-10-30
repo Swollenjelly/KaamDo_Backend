@@ -46,6 +46,7 @@ export const vendorController = {
             documentType,
         } = vendorRegisterSchema.parse(req.body);
 
+        //await getRepo
         const vendorRepo = AppDataSource.getRepository(Vendor);
 
         const existingVendor = await vendorRepo.findOne({
@@ -58,7 +59,7 @@ export const vendorController = {
             .json({ message: "Vendor with this phone number already exists" });
         }
 
-        const hashedPass = await bcrypt.hash(password, 10);
+        const hashedPass = await bcrypt.hash(password,10);
 
         const newVendor = vendorRepo.create({
             name,
@@ -71,6 +72,8 @@ export const vendorController = {
             vendorType,
             documentType,
         });
+
+        // multer
 
         await vendorRepo.save(newVendor);
 
@@ -182,6 +185,11 @@ export const vendorController = {
                 next(error)
         }
 
-    }
-     
+    },
+
+    // job listing api to view all the job
+    async jobListingVendor(req:Request, res:Response, next:NextFunction){
+        
+    }   
+
 }
