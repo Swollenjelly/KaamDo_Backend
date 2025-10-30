@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AppDataSource } from "../config/data-source";
 import { JobListings } from "../entities/job-listing";
 import { JobItem } from "../entities/job-item";
+import { connect } from "http2";
 
 // ---------- Zod Schemas ----------
 const createSchema = z.object({
@@ -100,6 +101,9 @@ if (!item.parent || !["sub-category"].includes(item.kind)) {
       
 
 
+    }
+    catch{
+        console.log("error here")
     }
 
   },
