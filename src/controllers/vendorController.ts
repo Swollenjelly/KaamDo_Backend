@@ -12,7 +12,7 @@ const vendorRegisterSchema = z.object({
     email: z.string().optional().transform(val => val === "" ? null : val),
     password: z.string().min(1).max(100),
     gender: z.enum(["male", "female", "other"]),
-    location: z.string(),
+    location: z.enum(["mumbai" , "pune" , "banglore" , "delhi" , "chennai" , "hyderabad" , "kolkata"]),
     preferredWorkLocation: z.enum(["inside", "outside", "both"]),
     vendorType: z.enum(["individual", "company"]),
     documentType: z.enum([

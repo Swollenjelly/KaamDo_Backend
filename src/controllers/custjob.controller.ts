@@ -14,6 +14,16 @@ const createSchema = z.object({
 //   scheduled_at: z.string().datetime().optional(),
 });
 
+const jobListQuerySchem = z.object({
+  page: z.coerce.number().int().default(1),
+  pageSize: z.coerce.number().int().min(1).max(20).default(10),
+  status: z.string(),
+  sort: z.enum(["newest", "oldest"]).default("newest"),
+
+
+
+})
+
 // ---------- Helpers ----------
 function toDateOrNull(s?: string) {
   return s ? new Date(s) : null;
@@ -51,7 +61,7 @@ if (!item.parent || !["sub-category"].includes(item.kind)) {
         user: { id: userId } as any,
         job_item: item,
         details: body.details ?? null,
-        budget_amount: body.budget_amount != null ? body.budget_amount.toString() : null,
+        // budget_amount: body.budget_amount != null ? body.budget_amount.toString() : null,
         city: body.city ?? null,
         pincode: body.pincode ?? null,
         // scheduled_at: toDateOrNull(req.body.scheduled_at),
@@ -71,4 +81,38 @@ if (!item.parent || !["sub-category"].includes(item.kind)) {
       next(err);
     }
   },
+
+  async viewJob(req: Request, res: Response, next: NextFunction){
+
+    try{
+      const userId = (req as any).userId as number | undefined;
+      if (!userId) return res.status(401).json({message: "Unauthorised"});
+
+      const { page, pageSize, status, sort } = jobListQuerySchem.parse(req.query);
+      
+            const repo = AppDataSource.getRepository(JobListings);
+      
+            const where: any = { user: { id: userId } };
+            if (status) where.status = status;
+      
+            const qb = repo
+              
+      
+
+
+    }
+
+  },
 }
+
+
+
+
+
+
+
+
+
+
+
+

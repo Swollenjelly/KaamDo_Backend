@@ -41,6 +41,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
 import { User } from "./user";
 import { JobItem } from "./job-item";
+import { Vendor } from "./vendor";
 
 export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled'|'draft';
 
@@ -60,8 +61,8 @@ export class JobListings {
   @Column({ type: "text", nullable: true })
   details!: string | null;
 
-  @Column({ type: "numeric", precision: 12, scale: 2, nullable: true })
-  budget_amount!: string | null;
+  // @Column({ type: "numeric", precision: 12, scale: 2, nullable: true })
+  // budget_amount!: string | null;
 
   @Column({ type: "varchar", length: 100, nullable: true })
   city!: string | null;
@@ -74,6 +75,12 @@ export class JobListings {
 
   @Column({ type: "text", default: "open" })
   status!: JobStatus;
+
+  // in JobListings entity
+
+  @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
+  assigned_vendor!: Vendor | null;
+
 
 //   @CreateDateColumn({ type: "timestamptz" })
 //   created_at!: Date;

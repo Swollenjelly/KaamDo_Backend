@@ -8,6 +8,8 @@ export type VendorType = "individual" | "company"
 
 export type DocumentType = "aadhar" | "pan" | "driving_license" | "voter_id" | "passport"
 
+export type location = "mumbai" | "pune" | "banglore" | "delhi" | "chennai" | "hyderabad" | "kolkata" 
+
 @Entity("vendors")
 export class Vendor {
     @PrimaryGeneratedColumn()
@@ -31,8 +33,11 @@ export class Vendor {
     })
     gender!: gender;
 
-    @Column()
-    location!: string;
+    @Column({
+        type: "enum",
+        enum: ["mumbai" , "pune" , "banglore" , "delhi" , "chennai" , "hyderabad" , "kolkata"]
+})
+    location!: location;
 
     @Column({
         type: "enum",
