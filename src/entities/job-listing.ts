@@ -1,47 +1,9 @@
-// import {
-//   Entity, PrimaryGeneratedColumn, Column,
-//   ManyToOne, OneToMany, Index, Unique
-// } from "typeorm";
-// import { JobItem } from "./job-item";
-
-// export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled';
-
-// @Entity({ name: "job_listings" })
-// @Unique(["slug"])
-// export class JobListing {
-//   @PrimaryGeneratedColumn()
-//   id!: number;
-   
-//   @Column({ type: "text" })
-//     kind!: Kind;
-
-//     @Column({ type: "varchar", length: 200 })
-//     description!: string;
-
-//     @Column({ type: "varchar", length: 180 })
-//     phone!: string;
-
-//     @Column({ type: "varchar", length: 180 })
-//     location!: string;
-
-//     @Column({ type: "varchar", length: 180 })
-//     preferred_amount!: string;
-
-//     @Column({ type: "varchar", length: 180 })
-//     images!: string;
-
-//     @ManyToOne(() => JobItem, { nullable: false })
-//     @Index()
-//     job_item!: JobItem;
-// }
-
-
-
-
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
 import { User } from "./user";
 import { JobItem } from "./job-item";
 import { Vendor } from "./vendor";
+import { OneToMany } from "typeorm";
+import { Bid } from "./bid";
 
 export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled'|'draft';
 
@@ -61,17 +23,17 @@ export class JobListings {
   @Column({ type: "text", nullable: true })
   details!: string | null;
 
-  // @Column({ type: "numeric", precision: 12, scale: 2, nullable: true })
-  // budget_amount!: string | null;
-
   @Column({ type: "varchar", length: 100, nullable: true })
   city!: string | null;
 
   @Column({ type: "varchar", length: 10, nullable: true })
   pincode!: string | null;
 
-//   @Column({ type: "timestamptz", nullable: true })
-//   scheduled_at!: Date | null;
+  @Column({ type: "timestamptz", nullable: true })
+  scheduled_date!: Date | null;
+
+  @Column({ type: "timestamptz", nullable: true })
+  scheduled_time!: Date | null;
 
   @Column({ type: "text", default: "open" })
   status!: JobStatus;
@@ -81,10 +43,7 @@ export class JobListings {
   @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
   assigned_vendor!: Vendor | null;
 
-
-//   @CreateDateColumn({ type: "timestamptz" })
-//   created_at!: Date;
-
-//   @UpdateDateColumn({ type: "timestamptz" })
-//   updated_at!: Date;
+  
+@OneToMany(() => Bid, (b) => b.job, { cascade: false })
+bids!: Bid[];
 }

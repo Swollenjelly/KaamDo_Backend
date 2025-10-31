@@ -8,10 +8,14 @@ import { JobItem } from "../entities/job-item";
 const createSchema = z.object({
   jobTaskId: z.number().int().positive(),
   details: z.string().min(3).max(5000).optional(),
-  budget_amount: z.number().nonnegative().optional(),
+  // budget_amount: z.number().nonnegative().optional(),
   city: z.string().min(2).max(100).optional(),
   pincode: z.string().min(4).max(10).optional(),
-//   scheduled_at: z.string().datetime().optional(),
+  scheduled_date: z.iso.date().optional(),
+  scheduled_time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/) // HH:mm or HH:mm:ss
+    .optional(),
 });
 
 const jobListQuerySchem = z.object({
@@ -24,7 +28,6 @@ const jobListQuerySchem = z.object({
 
 })
 
-// ---------- Helpers ----------
 function toDateOrNull(s?: string) {
   return s ? new Date(s) : null;
 }
@@ -61,10 +64,10 @@ if (!item.parent || !["sub-category"].includes(item.kind)) {
         user: { id: userId } as any,
         job_item: item,
         details: body.details ?? null,
-        // budget_amount: body.budget_amount != null ? body.budget_amount.toString() : null,
         city: body.city ?? null,
         pincode: body.pincode ?? null,
-        // scheduled_at: toDateOrNull(req.body.scheduled_at),
+        scheduled_date: body.scheduled_date ?? null, // Date | null
+  scheduled_time: body.scheduled_time ?? null, // string | null
         status: "open",
       });
       await listingRepo.save(listing);
@@ -82,37 +85,75 @@ if (!item.parent || !["sub-category"].includes(item.kind)) {
     }
   },
 
-  async viewJob(req: Request, res: Response, next: NextFunction){
+  async viewJob(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = (req as any).userId as number | undefined;
+    if (!userId) return res.status(401).json({ message: "Unauthorised" });
 
-    try{
-      const userId = (req as any).userId as number | undefined;
-      if (!userId) return res.status(401).json({message: "Unauthorised"});
+    const { page, pageSize, status, sort } = jobListQuerySchem.parse(req.query);
 
-      const { page, pageSize, status, sort } = jobListQuerySchem.parse(req.query);
-      
-            const repo = AppDataSource.getRepository(JobListings);
-      
-            const where: any = { user: { id: userId } };
-            if (status) where.status = status;
-      
-            const qb = repo
-              
-      
+    const repo = AppDataSource.getRepository(JobListings);
 
+    const qb = repo
+      .createQueryBuilder("job")
+      .leftJoinAndSelect("job.job_item", "job_item")
+      .leftJoinAndSelect("job_item.parent", "parent")
+      .leftJoinAndSelect("job.bids", "bid")          // <- include bids
+      .leftJoinAndSelect("bid.vendor", "vendor")     // <- include vendor on each bid
+      .where("job.userId = :userId", { userId });
 
-    }
+    if (status) qb.andWhere("job.status = :status", { status });
 
-  },
+    qb.orderBy("job.id", sort === "newest" ? "DESC" : "ASC")
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const [rows, total] = await qb.getManyAndCount();
+
+    // shape the response
+    const data = rows.map((j) => ({
+      id: j.id,
+      status: j.status,
+      details: j.details,
+      city: j.city,
+      pincode: j.pincode,
+      jobTask: {
+        id: j.job_item?.id,
+        name: j.job_item?.name,
+        categoryId: j.job_item?.parent?.id,
+        categoryName: j.job_item?.parent?.name,
+      },
+      bids: (j as any).bids?.map((b: any) => ({
+        id: b.id,
+        amount: b.amount,
+        status: b.status,
+        // adjust these vendor fields to match your Vendor entity
+        vendor: b.vendor
+          ? {
+              id: b.vendor.id,
+              name: b.vendor.name ?? b.vendor.full_name ?? b.vendor.business_name ?? null,
+              phone: b.vendor.phone ?? null,
+              email: b.vendor.email ?? null,
+            }
+          : null,
+        message: b.message ?? null,
+        createdAt: b.created_at ?? undefined, // keep if you have timestamps
+      })) ?? [],
+    }));
+
+    return res.json({
+      message: "OK",
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
+,
+};
