@@ -26,4 +26,7 @@ router.post("/vendorLogin", vendorController.loginVendor)
 router.delete("/vendorDelete", vendorAuth, vendorController.deleteVendor)
 router.post("/vendorUpdate", vendorAuth, vendorController.updateVendor)
 
+// route to list all the jobs available (status = open)
+router.get("/jobListing", vendorController.jobListing)
+
 export default router;

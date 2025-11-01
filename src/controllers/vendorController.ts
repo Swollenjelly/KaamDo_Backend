@@ -2,6 +2,8 @@ import { z } from "zod";
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Vendor } from "../entities/vendor";
+import { Bid } from "../entities/bid";
+import { JobListings } from "../entities/job-listing";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt"
@@ -188,8 +190,26 @@ export const vendorController = {
     },
 
     // job listing api to view all the job
-    async jobListingVendor(req:Request, res:Response, next:NextFunction){
-        
+    async jobListing(req:Request, res:Response){
+        try {
+            
+            const jobRepo = AppDataSource.getRepository(JobListings)
+            const openJobs = await jobRepo.find({
+                where: {status: "open"},
+                relations: ["job_item"]
+            })
+
+            res.status(200).json({
+                message: "Jobs fetched successfully",
+                data: openJobs
+            })
+
+        } catch (error) {
+            res.status(500).json({
+                message: "Unable to load jobs at the moment",
+                data: error
+            })
+        } 
     }   
 
 }
