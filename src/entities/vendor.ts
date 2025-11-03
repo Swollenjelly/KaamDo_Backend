@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { string } from "zod";
 
 export type gender = "male" | "female" | "other";
 
@@ -57,6 +58,7 @@ export class Vendor {
     })
     documentType!: DocumentType;
     
-
+    @Column({type: "varchar", length: 255, nullable:true})
+    documentFile !: string|null;
 
 }

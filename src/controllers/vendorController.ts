@@ -63,6 +63,8 @@ export const vendorController = {
 
         const hashedPass = await bcrypt.hash(password,10);
 
+        const documentFile = req.file ? req.file.filename : null
+
         const newVendor = vendorRepo.create({
             name,
             phone,
@@ -73,6 +75,7 @@ export const vendorController = {
             preferredWorkLocation,
             vendorType,
             documentType,
+            documentFile
         });
 
         // multer
