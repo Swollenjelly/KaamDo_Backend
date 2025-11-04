@@ -11,14 +11,20 @@ import { customerController } from "../controllers/custjob.controller";
 import { vendorAuth } from "../middleware/vendorAuth";
 
 const router = Router();
+
+// user routes
+
+// open routes
 router.post("/register", authenticationController.register);
 router.post("/login", authenticationController.login);
-router.post("/Delete_user",requireAuth, authenticationController.deleteuser);
-router.put("/updateuser", requireAuth, authenticationController.updateuser);
 router.post("/job-item", jobController.createJobitem);
-router.post("/createJob", requireAuth, customerController.createJob);    
-router.post("/viewJob", requireAuth, customerController.viewJob)
-// router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
+
+// protected routes
+router.use(requireAuth)
+router.post("/Delete_user", authenticationController.deleteuser);
+router.put("/updateuser",  authenticationController.updateuser);
+router.post("/createJob",  customerController.createJob);    
+router.post("/viewJob",  customerController.viewJob)
 
 // vendor routes 
 
@@ -26,12 +32,12 @@ router.post("/viewJob", requireAuth, customerController.viewJob)
 router.post("/vendorRegister", vendorController.registerVendor) 
 router.post("/vendorLogin", vendorController.loginVendor)
 
-// protect routes
+// protected routes
 router.use(vendorAuth)
 router.delete("/vendorDelete", vendorController.deleteVendor)
 router.post("/vendorUpdate", vendorController.updateVendor)
 // route to list all the jobs available (status = open)
 router.get("/jobListing", vendorController.jobListing)
-
+router.post("/placeBid/:jobId", vendorController.placeBid)
 
 export default router;

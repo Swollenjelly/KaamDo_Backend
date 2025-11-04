@@ -218,11 +218,10 @@ export const vendorController = {
           
             // get the job id from the routes
             const jobId = req.params.jobId
-
-            const vendorId = (req as any).vendorId
-
             // convert the id into number
             const jobNumber = Number(jobId)
+
+            const vendorId = (req as any).vendorId
 
             const { amount, message } = req.body
 
@@ -234,7 +233,7 @@ export const vendorController = {
             const findJob = await jobRepo.findOne({ where: {
                 id: jobNumber
             } })
-            if(!findJob){
+            if(!findJob){ 
                 return res.status(400).json({
                     message: "Job not found"
                 })
