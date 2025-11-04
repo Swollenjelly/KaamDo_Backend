@@ -21,12 +21,17 @@ router.post("/viewJob", requireAuth, customerController.viewJob)
 // router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
 
 // vendor routes 
-router.post("/vendorRegister", vendorController.registerVendor)
-router.post("/vendorLogin", vendorController.loginVendor)
-router.delete("/vendorDelete", vendorAuth, vendorController.deleteVendor)
-router.post("/vendorUpdate", vendorAuth, vendorController.updateVendor)
 
+// open routes 
+router.post("/vendorRegister", vendorController.registerVendor) 
+router.post("/vendorLogin", vendorController.loginVendor)
+
+// protect routes
+router.use(vendorAuth)
+router.delete("/vendorDelete", vendorController.deleteVendor)
+router.post("/vendorUpdate", vendorController.updateVendor)
 // route to list all the jobs available (status = open)
 router.get("/jobListing", vendorController.jobListing)
+
 
 export default router;

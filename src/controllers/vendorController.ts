@@ -190,7 +190,7 @@ export const vendorController = {
     },
 
     // job listing api to view all the job
-    async jobListing(res:Response){
+    async jobListing(req:Request, res:Response){
         try {
             
             const jobRepo = AppDataSource.getRepository(JobListings)
@@ -217,7 +217,7 @@ export const vendorController = {
         try {
           
             // get the job id from the routes
-            const jobId = req.params.id
+            const jobId = req.params.jobId
 
             const vendorId = (req as any).vendorId
 
