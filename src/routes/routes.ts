@@ -14,28 +14,28 @@ const router = Router();
 
 // user routes
 
-// open routes
+// open user routes
 router.post("/register", authenticationController.register);
 router.post("/login", authenticationController.login);
 router.post("/job-item", jobController.createJobitem);
 
-// protected routes
+// open vendor routes 
+router.post("/vendorRegister", vendorController.registerVendor) 
+router.post("/vendorLogin", vendorController.loginVendor)
+
+// protected user routes
 router.use(requireAuth)
 router.post("/Delete_user", authenticationController.deleteuser);
 router.put("/updateuser",  authenticationController.updateuser);
 router.post("/createJob",  customerController.createJob);    
 router.post("/viewJob",  customerController.viewJob)
 
-// vendor routes 
 
-// open routes 
-router.post("/vendorRegister", vendorController.registerVendor) 
-router.post("/vendorLogin", vendorController.loginVendor)
-
-// protected routes
+// protected vendor routes
 router.use(vendorAuth)
 router.delete("/vendorDelete", vendorController.deleteVendor)
 router.post("/vendorUpdate", vendorController.updateVendor)
+
 // route to list all the jobs available (status = open)
 router.get("/jobListing", vendorController.jobListing)
 router.post("/placeBid/:jobId", vendorController.placeBid)

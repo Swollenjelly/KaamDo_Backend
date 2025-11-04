@@ -103,7 +103,7 @@ export const vendorController = {
 
         // Put the id into the standard subject (as string)
         const token = jwt.sign(
-            {}, // no custom payload needed
+            {},
             env.JWT_SECRET,
             { subject: String(vendor.id), expiresIn: "2h" }
         );
@@ -111,12 +111,12 @@ export const vendorController = {
         res.status(200).json({
             message: "Vendor logged in successfully",
             data: {
-            vendor,
-            token,
+                vendor,
+                token,
             },
         });
         } catch (error) {
-        next(error);
+            next(error);
         }
     },
 
