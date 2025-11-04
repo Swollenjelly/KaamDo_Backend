@@ -1,12 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-
-// export enum gender {
-//     MALE = "MALE",
-//     FEMALE = "FEMALE",
-//     OTHER = "OTHER"
-// }
-
 export type gender = "male" | "female" | "other";
 
 @Entity("users")

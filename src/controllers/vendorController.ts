@@ -2,6 +2,8 @@ import { z } from "zod";
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Vendor } from "../entities/vendor";
+import { Bid } from "../entities/bid";
+import { JobListings } from "../entities/job-listing";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt"
@@ -188,8 +190,96 @@ export const vendorController = {
     },
 
     // job listing api to view all the job
-    async jobListingVendor(req:Request, res:Response, next:NextFunction){
-        
-    }   
+    async jobListing(req:Request, res:Response){
+        try {
+            
+            const jobRepo = AppDataSource.getRepository(JobListings)
+            const openJobs = await jobRepo.find({
+                where: {status: "open"},
+                relations: ["job_item"]
+            })
+
+            res.status(200).json({
+                message: "Jobs fetched successfully",
+                data: openJobs
+            })
+
+        } catch (error) {
+            res.status(500).json({
+                message: "Unable to load jobs at the moment",
+                data: error
+            })
+        } 
+    },   
+
+    // place bid controller 
+    async placeBid(req:Request, res:Response, next:NextFunction){
+        try {
+          
+            // get the job id from the routes
+            const jobId = req.params.jobId
+            // convert the id into number
+            const jobNumber = Number(jobId)
+
+            const vendorId = (req as any).vendorId
+
+            const { amount, message } = req.body
+
+            const jobRepo = AppDataSource.getRepository(JobListings)
+            const bidRepo = AppDataSource.getRepository(Bid)
+            const vendorRepo = AppDataSource.getRepository(Vendor)
+
+            // check if the job exist 
+            const findJob = await jobRepo.findOne({ where: {
+                id: jobNumber
+            } })
+            if(!findJob){ 
+                return res.status(400).json({
+                    message: "Job not found"
+                })
+            }
+
+            // check if the vendor exists 
+            const findVendor = await vendorRepo.findOne({ where: 
+                {id: vendorId}
+            })
+            if(!findVendor){
+                return res.status(400).json({
+                    message: "Vendor not found"
+                })
+            }
+
+            // check if the vendor has already placed the bid once because once placed cannot bid again 
+            const existingBid = await bidRepo.findOne({
+                where: {
+                    job: {id: jobNumber},
+                    vendor: {id: vendorId}
+                }
+            })
+            if(existingBid){
+                return res.status(400).json({
+                    message: "You have already placed the bet on this job"
+                })
+            }
+
+            const bid = bidRepo.create({
+                job: findJob,
+                vendor: vendorId,
+                amount,
+                message,
+                status: "open"
+            })
+
+            await bidRepo.save(bid)
+
+            return res.status(200).json({
+                message: "Bid for the job has been placed successfully",
+                data: bid
+            })
+
+        } catch (error) {
+            next(error)
+        }
+    }
 
 }
