@@ -209,6 +209,7 @@ export const vendorController = {
                 schedule_time: job.scheduled_time
             }))
 
+            
             res.status(200).json({
                 message: "Jobs fetched successfully",
                 data: formattedOutput
