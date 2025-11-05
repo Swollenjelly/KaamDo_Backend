@@ -36,7 +36,7 @@ export class Vendor {
     @Column({
         type: "enum",
         enum: ["mumbai" , "pune" , "banglore" , "delhi" , "chennai" , "hyderabad" , "kolkata"]
-})
+    })
     location!: location;
 
     @Column({
