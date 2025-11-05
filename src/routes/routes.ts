@@ -17,7 +17,7 @@ router.post("/Delete_user",requireAuth, authenticationController.deleteuser);
 router.put("/updateuser", requireAuth, authenticationController.updateuser);
 router.post("/job-item", jobController.createJobitem);
 router.post("/createJob", requireAuth, customerController.createJob);    
-router.post("/viewJob", requireAuth, customerController.viewJob)
+router.get("/viewJob", requireAuth, customerController.viewJob)
 // router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
 
 // vendor routes 
