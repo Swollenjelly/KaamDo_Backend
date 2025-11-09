@@ -106,7 +106,7 @@ export const vendorController = {
 
         // Put the id into the standard subject (as string)
         const token = jwt.sign(
-            {}, // no custom payload needed
+            {},
             env.JWT_SECRET,
             { subject: String(vendor.id), expiresIn: "2h" }
         );
@@ -114,12 +114,12 @@ export const vendorController = {
         res.status(200).json({
             message: "Vendor logged in successfully",
             data: {
-            vendor,
-            token,
+                vendor,
+                token,
             },
         });
         } catch (error) {
-        next(error);
+            next(error);
         }
     },
 
@@ -193,18 +193,29 @@ export const vendorController = {
     },
 
     // job listing api to view all the job
-    async jobListing(res:Response){
+    async jobListing(req:Request, res:Response){
         try {
             
             const jobRepo = AppDataSource.getRepository(JobListings)
             const openJobs = await jobRepo.find({
                 where: {status: "open"},
-                relations: ["job_item"]
+                relations: ["job_item", "user"]
             })
 
+            const formattedOutput = openJobs.map((job) => ({
+                jobId: job.id,
+                jobName: job.job_item?.name,
+                postedBy: job.user?.name,
+                location: job.user?.location,
+                details: job.details,
+                schedule_date: job.scheduled_date,
+                schedule_time: job.scheduled_time
+            }))
+
+            
             res.status(200).json({
                 message: "Jobs fetched successfully",
-                data: openJobs
+                data: formattedOutput
             })
 
         } catch (error) {
@@ -220,12 +231,11 @@ export const vendorController = {
         try {
           
             // get the job id from the routes
-            const jobId = req.params.id
-
-            const vendorId = (req as any).vendorId
-
+            const jobId = req.params.jobId
             // convert the id into number
             const jobNumber = Number(jobId)
+
+            const vendorId = (req as any).vendorId
 
             const { amount, message } = req.body
 
@@ -237,7 +247,7 @@ export const vendorController = {
             const findJob = await jobRepo.findOne({ where: {
                 id: jobNumber
             } })
-            if(!findJob){
+            if(!findJob){ 
                 return res.status(400).json({
                     message: "Job not found"
                 })
@@ -287,3 +297,4 @@ export const vendorController = {
     }
 
 }
+
