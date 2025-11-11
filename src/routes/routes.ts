@@ -18,6 +18,11 @@ const router = Router();
 router.post("/register", authenticationController.register);
 router.post("/login", authenticationController.login);
 router.post("/job-item", jobController.createJobitem);
+router.post("/createJob", requireAuth, customerController.createJob);    
+router.get("/viewJob", requireAuth, customerController.viewJob)
+router.get("/job-item", jobController.listJobItems);
+// router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
+
 
 // open vendor routes 
 router.post("/vendorRegister", vendorController.registerVendor) 
