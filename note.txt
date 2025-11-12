@@ -1,1 +1,5 @@
 1. create job_listing api to display jobs to vendor
+
+2. to store empty email we cannot store empty string we have to -> convert to null 
+        a. email: z.email().optional().transform(val => val === "" ? null : val)
+        b. also we have to use string with zod we cannot use email as the regex doesn't allow to enter a empty string 

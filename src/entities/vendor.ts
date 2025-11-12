@@ -57,6 +57,7 @@ export class Vendor {
     })
     documentType!: DocumentType;
     
-
+    @Column({type: "varchar", length: 255, nullable:true})
+    documentFile !: string|null;
 
 }

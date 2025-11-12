@@ -63,6 +63,8 @@ export const vendorController = {
 
         const hashedPass = await bcrypt.hash(password,10);
 
+        // const documentFile = req.file ? req.file.filename : null
+
         const newVendor = vendorRepo.create({
             name,
             phone,
@@ -73,6 +75,7 @@ export const vendorController = {
             preferredWorkLocation,
             vendorType,
             documentType,
+            // documentFile
         });
 
         // multer
@@ -196,14 +199,18 @@ export const vendorController = {
             const jobRepo = AppDataSource.getRepository(JobListings)
             const openJobs = await jobRepo.find({
                 where: {status: "open"},
-                relations: ["job_item", "user"]
+                relations: ["job_item", "user"],
+                // to get the latest job first in desecending order
+                order: {
+                    id: "DESC"
+                }
             })
 
             const formattedOutput = openJobs.map((job) => ({
                 jobId: job.id,
                 jobName: job.job_item?.name,
                 postedBy: job.user?.name,
-                location: job.user?.location,
+                location: job.city,
                 details: job.details,
                 schedule_date: job.scheduled_date,
                 schedule_time: job.scheduled_time
