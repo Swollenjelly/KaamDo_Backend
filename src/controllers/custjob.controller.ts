@@ -79,6 +79,8 @@ export const customerController = {
                     id: listing.id,
                     status: listing.status,
                     jobTask: { id: item.id, name: item.name, categoryId: item.parent.id, categoryName: item.parent.name },
+                    scheduled_date: listing.scheduled_date,
+                    scheduled_time: listing.scheduled_time,
                 },
             });
         } catch (err) {
@@ -155,6 +157,6 @@ export const customerController = {
         } catch (err) {
             next(err);
         }
-    }
+    },
 
 };

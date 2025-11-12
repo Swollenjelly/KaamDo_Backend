@@ -46,4 +46,24 @@ export const jobController = {
       next(err);
     }
   },
+
+  async listJobItems(req: Request, res: Response) {
+  const repo = AppDataSource.getRepository(JobItem);
+  const rows = await repo.find({
+    where: { is_active: true },
+    relations: { parent: true },           // <-- important
+    order: { kind: "ASC", name: "ASC" },
+  });
+
+  const data = rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    kind: r.kind,                           // "category" | "sub-category"
+    is_active: r.is_active,
+    parentId: r.parent ? r.parent.id : null // <-- expose parentId
+  }));
+
+  res.json(data);
+}
 };

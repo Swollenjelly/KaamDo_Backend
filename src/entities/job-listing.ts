@@ -29,11 +29,12 @@ export class JobListings {
   @Column({ type: "varchar", length: 10, nullable: true })
   pincode!: string | null;
 
-  @Column({ type: "timestamptz", nullable: true })
-  scheduled_date!: Date | null;
+@Column({ type: "date", nullable: true })
+scheduled_date!: string | null;
 
-  @Column({ type: "timestamptz", nullable: true })
-  scheduled_time!: Date | null;
+@Column({ type: "time", nullable: true })  // <- change from timestamptz
+scheduled_time!: string | null;
+
 
   @Column({ type: "text", default: "open" })
   status!: JobStatus;
