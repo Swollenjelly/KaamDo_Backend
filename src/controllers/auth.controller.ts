@@ -1,4 +1,4 @@
-import { email, z } from "zod";
+import { z } from "zod";
 import e, { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/user";
@@ -11,122 +11,99 @@ import { parse } from "path";
 // import { AuthService } from "../services/auth.service";
 
 const registerSchema = z.object({
-name: z.string().min(2).max(40),
-phone: z.string().min(10).max(10),
-email: z.email().optional(),
-password: z.string().min(1).max(100),
-gender: z.enum(["male", "female", "other"]),
-location: z.string(),
-});
-
-const loginSchema = z.object({
-phone: z.string().min(10).max(10),
-password: z.string().min(1).max(100),
-});
-
-const vendorRegisterSchema = z.object({
-    name: z.string().min(3).max(30),
+    name: z.string().min(2).max(40),
     phone: z.string().min(10).max(10),
-    email: z.email().optional(),
+    email: z.string().optional().transform(val => val === "" ? null : val),
     password: z.string().min(1).max(100),
     gender: z.enum(["male", "female", "other"]),
     location: z.string(),
-    preferredWorkLocation: z.enum(["inside", "outside", "both"]),
-    vendorType: z.enum(["individual", "company"]),
-    documentType: z.enum([
-        "aadhar",
-        "pan",
-        "driving_license",
-        "voter_id",
-        "passport",
-    ]),
 });
 
-const vendorLoginSchema = z.object({
-phone: z.string().min(10).max(10),
-password: z.string().min(1).max(100),
+const loginSchema = z.object({
+    phone: z.string().min(10).max(10),
+    password: z.string().min(1).max(100),
 });
 
 export const authenticationController = {
     async register(req: Request, res: Response, next: NextFunction) {
         try {
-        const { name, phone, email, password, gender, location } =
-            registerSchema.parse(req.body);
+            const { name, phone, email, password, gender, location } =
+                registerSchema.parse(req.body);
 
-        const userRepo = AppDataSource.getRepository(User);
+            const userRepo = AppDataSource.getRepository(User);
 
-        // Check if phonealready exists
-        const existingUser = await userRepo.findOne({ where: [{ phone }] });
-        if (existingUser) {
-            return res.status(409).json({
-            message: "User already exists with this phone or email",
+            // Check if phonealready exists
+            const existingUser = await userRepo.findOne({ where: [{ phone }] });
+            if (existingUser) {
+                return res.status(409).json({
+                    message: "User already exists with this phone or email",
+                });
+            }
+
+            // Hash password
+            const passwordHash = await bcrypt.hash(password, 10);
+
+            // Create user
+            const newUser = userRepo.create({
+                name,
+                phone,
+                email: email || null,
+                passwordHash,
+                gender,
+                location,
             });
-        }
+            await userRepo.save(newUser);
 
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        // Create user
-        const newUser = userRepo.create({
-            name,
-            phone,
-            email: email || null,
-            passwordHash,
-            gender,
-            location,
-        });
-        await userRepo.save(newUser);
-
-        res.status(201).json({
-            message: "User registered successfully",
-            data: {
-            id: newUser.id,
-            name: newUser.name,
-            phone: newUser.phone,
-            email: newUser.email,
-            gender: newUser.gender,
-            location: newUser.location,
-            },
-        });
+            res.status(201).json({
+                message: "User registered successfully",
+                data: {
+                    id: newUser.id,
+                    name: newUser.name,
+                    phone: newUser.phone,
+                    email: newUser.email,
+                    gender: newUser.gender,
+                    location: newUser.location,
+                },
+            });
         } catch (error) {
-        next(error);
+            next(error);
         }
     },
 
     async login(req: Request, res: Response, next: NextFunction) {
         try {
-        const { phone, password } = loginSchema.parse(req.body);
-        const userRepo = AppDataSource.getRepository(User);
-        const user = await userRepo.findOne({ where: { phone } });
+            const { phone, password } = loginSchema.parse(req.body);
+            const userRepo = AppDataSource.getRepository(User);
+            const user = await userRepo.findOne({ where: { phone } });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
+            const valid = await bcrypt.compare(password, user.passwordHash);
+            if (!valid) {
+                return res.status(401).json({ message: "Invalid credentials" });
+            }
 
-        // Put the id into the standard subject (as string)
-        const token = jwt.sign(
-            {}, // no custom payload needed
-            ENV.JWT_SECRET,
-            { subject: String(user.id), expiresIn: "2h" }
-        );
+            // Put the id into the standard subject (as string)
+            const token = jwt.sign(
+                {}, // no custom payload needed
+                ENV.JWT_SECRET,
+                { subject: String(user.id), expiresIn: "2h" }
+            );
 
-        res.status(200).json({
-            message: "User logged in successfully",
-            data: {
-            id: user.id,
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-            token,
-            },
-        });
+            res.status(200).json({
+                message: "User logged in successfully",
+                data: {
+                    id: user.id,
+                    name: user.name,
+                    phone: user.phone,
+                    email: user.email,
+                    token,
+                },
+            });
         } catch (error) {
-        next(error);
+            next(error);
         }
     },
 
@@ -145,7 +122,7 @@ export const authenticationController = {
             }
 
             return res.status(200).json({ message: "Profile deleted" });
-        } 
+        }
         catch (error) {
             next(error);
         }
@@ -156,44 +133,44 @@ export const authenticationController = {
         console.log("Request body:", req.body);
         console.log("User ID from request:", (req as any).userId);
         try {
-        const userId = (req as any).userId;
-        if (!userId) return res.status(401).json({ message: "Unauthorized" });
+            const userId = (req as any).userId;
+            if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-        const { name, phone, email, password, gender, location } = req.body;
+            const { name, phone, email, password, gender, location } = req.body;
 
-        const userRepo = AppDataSource.getRepository(User);
-        const user = await userRepo.findOne({ where: { id: userId } });
+            const userRepo = AppDataSource.getRepository(User);
+            const user = await userRepo.findOne({ where: { id: userId } });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
 
-        if (name) user.name = name;
-        if (phone) user.phone = phone;
-        if (email) user.email = email;
-        if (gender) user.gender = gender;
-        if (location) user.location = location;
-        if (password) {
-            const passwordHash = await bcrypt.hash(password, 10);
-            user.passwordHash = passwordHash;
-        }
+            if (name) user.name = name;
+            if (phone) user.phone = phone;
+            if (email) user.email = email;
+            if (gender) user.gender = gender;
+            if (location) user.location = location;
+            if (password) {
+                const passwordHash = await bcrypt.hash(password, 10);
+                user.passwordHash = passwordHash;
+            }
 
-        await userRepo.save(user);
+            await userRepo.save(user);
 
-        return res.status(200).json({
-            message: "User updated successfully",
-            data: {
-            id: user.id,
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-            gender: user.gender,
-            location: user.location,
-            },
-        });
+            return res.status(200).json({
+                message: "User updated successfully",
+                data: {
+                    id: user.id,
+                    name: user.name,
+                    phone: user.phone,
+                    email: user.email,
+                    gender: user.gender,
+                    location: user.location,
+                },
+            });
         } catch (error) {
-        next(error);
+            next(error);
         }
     },
-    
+
 };

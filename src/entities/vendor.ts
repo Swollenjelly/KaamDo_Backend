@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-import { string } from "zod";
 
 export type gender = "male" | "female" | "other";
 
