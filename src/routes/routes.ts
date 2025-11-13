@@ -50,5 +50,6 @@ router.post("/vendorUpdate", vendorController.updateVendor)
 // route to list all the jobs available (status = open)
 router.get("/jobListing", vendorController.jobListing)
 router.post("/placeBid/:jobId", vendorController.placeBid)
+router.get("/assigned-jobs", vendorController.assignedJob)
 
 export default router;
