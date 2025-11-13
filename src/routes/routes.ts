@@ -7,8 +7,9 @@ import { authenticationController } from "../controllers/auth.controller";
 import { vendorController } from "../controllers/vendorController";
 import { requireAuth } from "../middleware/auth";
 import {jobController} from "../controllers/job.controller";
-import { customerController } from "../controllers/custjob.controller";
+import { bidController, customerController } from "../controllers/custjob.controller";
 import { vendorAuth } from "../middleware/vendorAuth";
+
 
 const router = Router();
 
@@ -33,7 +34,12 @@ router.use(requireAuth)
 router.post("/Delete_user", authenticationController.deleteuser);
 router.put("/updateuser",  authenticationController.updateuser);
 router.post("/createJob",  customerController.createJob);    
-router.post("/viewJob",  customerController.viewJob)
+router.get("/viewJob", customerController.viewJob);
+router.get("/jobs/:jobId/bids", bidController.getBidsForJob);
+router.post("/bids/:bidId/accept", bidController.acceptBid);
+router.post("/bids/:bidId/reject", bidController.rejectBid);
+
+
 
 
 // protected vendor routes

@@ -4,6 +4,7 @@ import { AppDataSource } from "../config/data-source";
 import { JobListings } from "../entities/job-listing";
 import { JobItem } from "../entities/job-item";
 import { connect } from "http2";
+import { Bid } from "../entities/bid";
 
 // ---------- Zod Schemas ----------
 const createSchema = z.object({
@@ -88,75 +89,168 @@ export const customerController = {
         }
     },
 
-    async viewJob(req: Request, res: Response, next: NextFunction) {
-        try {
-            const userId = (req as any).userId as number | undefined;
-            if (!userId) return res.status(401).json({ message: "Unauthorised" });
+    // src/controllers/custjob.controller.ts
 
-            const { page, pageSize, status, sort } = jobListQuerySchem.parse(req.query);
+  async viewJob(req: Request & { userId?: number }, res: Response) {
+  const userId = req.userId!;
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 10);
+  const status = String(req.query.status ?? "open") as any;
 
-            const repo = AppDataSource.getRepository(JobListings);
+  const repo = AppDataSource.getRepository(JobListings);
 
-            const qb = repo
-                .createQueryBuilder("job")
-                .leftJoinAndSelect("job.job_item", "job_item")
-                .leftJoinAndSelect("job_item.parent", "parent")
-                .leftJoinAndSelect("job.bids", "bid")          // <- include bids
-                .leftJoinAndSelect("bid.vendor", "vendor")     // <- include vendor on each bid
-                .where("job.userId = :userId", { userId });
+  // Load job_item and its parent so we can compute category & subcategory
+  const [rows, total] = await repo.findAndCount({
+    where: { user: { id: userId }, status },
+    relations: { job_item: { parent: true } },   // <<< IMPORTANT
+    order: { id: "DESC" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
 
-            if (status) qb.andWhere("job.status = :status", { status });
+  const data = rows.map((r) => {
+    const ji = r.job_item;
+    const isSub = ji?.kind === "sub-category";
+    const categoryName = isSub ? (ji?.parent?.name ?? "") : (ji?.name ?? "");
+    const subCategoryName = isSub ? (ji?.name ?? "") : "";
 
-            qb.orderBy("job.id", sort === "newest" ? "DESC" : "ASC")
-                .skip((page - 1) * pageSize)
-                .take(pageSize);
+    return {
+      id: r.id,
+      details: r.details ?? "",
+      city: r.city ?? "",
+      status: r.status,
+      scheduled_date: (r as any).scheduled_date ?? null,
+      scheduled_time: (r as any).scheduled_time ?? null, // string/ISO/time
+      jobItemId: ji?.id ?? null,
+      categoryName,
+      subCategoryName,
+      created_at: (r as any).createdAt ?? null,
+    };
+  });
 
-            const [rows, total] = await qb.getManyAndCount();
-
-            // shape the response
-            const data = rows.map((j) => ({
-                id: j.id,
-                status: j.status,
-                details: j.details,
-                city: j.city,
-                pincode: j.pincode,
-                jobTask: {
-                    id: j.job_item?.id,
-                    name: j.job_item?.name,
-                    categoryId: j.job_item?.parent?.id,
-                    categoryName: j.job_item?.parent?.name,
-                },
-                bids: (j as any).bids?.map((b: any) => ({
-                    id: b.id,
-                    amount: b.amount,
-                    status: b.status,
-                    // adjust these vendor fields to match your Vendor entity
-                    vendor: b.vendor
-                        ? {
-                            id: b.vendor.id,
-                            name: b.vendor.name ?? b.vendor.full_name ?? b.vendor.business_name ?? null,
-                            phone: b.vendor.phone ?? null,
-                            email: b.vendor.email ?? null,
-                        }
-                        : null,
-                    message: b.message ?? null,
-                    createdAt: b.created_at ?? undefined, // keep if you have timestamps
-                })) ?? [],
-            }));
-
-            return res.json({
-                message: "OK",
-                meta: {
-                    page,
-                    pageSize,
-                    total,
-                    totalPages: Math.ceil(total / pageSize),
-                },
-                data,
-            });
-        } catch (err) {
-            next(err);
-        }
-    },
+  res.json({ data, total, page, pageSize });
+  },
 
 };
+
+
+const JobIdParams = z.object({ jobId: z.coerce.number().int().positive() });
+const BidIdParams = z.object({ bidId: z.coerce.number().int().positive() });
+
+export const bidController = {
+  // 1) Fetch bids for a job (only if the logged-in user owns the job)
+  async getBidsForJob(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { jobId } = JobIdParams.parse(req.params);
+
+      const jobRepo = AppDataSource.getRepository(JobListings);
+      const bidRepo = AppDataSource.getRepository(Bid);
+
+      // confirm ownership
+      const job = await jobRepo.findOne({
+        where: { id: jobId },
+        relations: { user: true },
+      });
+      if (!job) return res.status(404).json({ message: "Job not found" });
+
+      
+      const userId = (req as any).userId;
+      if (!userId || job.user.id !== userId) {
+        return res.status(403).json({ message: "Not your job" });
+      }
+
+      const bids = await bidRepo.find({
+        where: { job: { id: jobId } },
+        relations: { vendor: true },
+        order: { created_at: "DESC" },
+      });
+
+      return res.json({ bids });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 2) Accept one bid -> reject all others for the same job
+  async acceptBid(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { bidId } = BidIdParams.parse(req.params);
+
+      const bidRepo = AppDataSource.getRepository(Bid);
+      const jobRepo = AppDataSource.getRepository(JobListings);
+
+      // fetch the target bid and confirm ownership
+      const bid = await bidRepo.findOne({
+        where: { id: bidId },
+        relations: { job: { user: true } },
+      });
+      if (!bid) return res.status(404).json({ message: "Bid not found" });
+
+      const userId = (req as any).userId ?? (req as any).user?.id;
+      if (!userId || bid.job.user.id !== userId) {
+        return res.status(403).json({ message: "Not your job" });
+      }
+
+      // if already accepted, short-circuit
+      if (bid.status === ("accepted" as any)) {
+        return res.json({ message: "Already accepted", bidId: bid.id });
+      }
+
+      // A) accept this bid
+      await bidRepo.update({ id: bidId }, { status: "accepted" as any });
+
+      // B) reject every other bid on this job
+      await bidRepo
+        .createQueryBuilder()
+        .update(Bid)
+        .set({ status: "rejected" as any })
+        .where("jobId = :jobId AND id <> :bidId", {
+          jobId: bid.job.id,
+          bidId: bid.id,
+        })
+        .execute();
+
+      // C) (optional) move job to assigned so vendors don’t see it
+      await jobRepo.update(bid.job.id, { status: "assigned" as any });
+
+      return res.json({ message: "Bid accepted; others rejected", acceptedBidId: bid.id });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+
+
+  // customer: reject a single bid (keeps others untouched)
+  async rejectBid(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { bidId } = BidIdParams.parse(req.params);
+      const bidRepo = AppDataSource.getRepository(Bid);
+
+      // fetch bid + ensure the logged-in user owns the job
+      const bid = await bidRepo.findOne({
+        where: { id: bidId },
+        relations: { job: { user: true } },
+      });
+      if (!bid) return res.status(404).json({ message: "Bid not found" });
+
+      const userId = (req as any).userId ?? (req as any).user?.id;
+      if (!userId || bid.job.user.id !== userId) {
+        return res.status(403).json({ message: "Not your job" });
+      }
+
+      if (bid.status === "accepted" as any) {
+        return res.status(409).json({ message: "Cannot reject an already accepted bid" });
+      }
+      if (bid.status === "rejected" as any) {
+        return res.json({ message: "Already rejected", bidId: bid.id });
+      }
+
+      // simple update
+      await bidRepo.update(bidId, { status: "rejected" as any });
+      return res.json({ message: "Bid rejected", bidId: bid.id });
+    } catch (err) {
+      next(err);
+    }
+  },
+  };
