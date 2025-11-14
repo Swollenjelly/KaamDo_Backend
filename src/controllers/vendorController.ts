@@ -233,9 +233,14 @@ export const vendorController = {
     async assignedJob(req: Request, res: Response) {
         try {
 
+            const vendorId = (req as any).vendorId
+
             const jobRepo = AppDataSource.getRepository(JobListings)
             const assignedJob = await jobRepo.find({
-                where: { status: "assigned" },
+                where: { 
+                    status: "assigned",
+                    assigned_vendor : {id: vendorId} 
+                },
                 relations: ["job_item", "user"]
             })
 
@@ -248,7 +253,6 @@ export const vendorController = {
                 schedule_time: data.scheduled_time,
                 location: data.city
             }))
-
             res.status(200).json({
                 message: "Jobs fetched successfully",
                 data: formattedOutput
