@@ -182,7 +182,7 @@ export const bidController = {
       // fetch the target bid and confirm ownership
       const bid = await bidRepo.findOne({
         where: { id: bidId },
-        relations: { job: { user: true } },
+        relations: { job: { user: true }, vendor: true},
       });
       if (!bid) return res.status(404).json({ message: "Bid not found" });
 
@@ -197,23 +197,35 @@ export const bidController = {
       }
 
       // A) accept this bid
-      await bidRepo.update({ id: bidId }, { status: "accepted" as any });
+await bidRepo.update({ id: bidId }, { status: "accepted" as any });
 
-      // B) reject every other bid on this job
-      await bidRepo
-        .createQueryBuilder()
-        .update(Bid)
-        .set({ status: "rejected" as any })
-        .where("jobId = :jobId AND id <> :bidId", {
-          jobId: bid.job.id,
-          bidId: bid.id,
-        })
-        .execute();
+// B) reject every other bid on this job
+await bidRepo
+  .createQueryBuilder()
+  .update(Bid)
+  .set({ status: "rejected" as any })
+  .where("jobId = :jobId AND id <> :bidId", {
+    jobId: bid.job.id,
+    bidId: bid.id,
+  })
+  .execute();
 
-      // C) (optional) move job to assigned so vendors don’t see it
-      await jobRepo.update(bid.job.id, { status: "assigned" as any });
+// C) load job and assign vendor
 
-      return res.json({ message: "Bid accepted; others rejected", acceptedBidId: bid.id });
+const job = await jobRepo.findOne({ where: { id: bid.job.id } });
+
+if (!job) {
+  return res.status(404).json({ message: "Job not found" });
+}
+
+// set status + assigned vendor
+job.status = "assigned" as any;
+job.assignedVendor = bid.vendor as any;          // 👈 relation object
+
+await jobRepo.save(job);                  // will set assignedVendorId in DB
+
+return res.json({ message: "Bid accepted; others rejected", acceptedBidId: bid.id as any});
+
     } catch (err) {
       next(err);
     }

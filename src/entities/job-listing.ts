@@ -41,10 +41,12 @@ scheduled_time!: string | null;
 
   // in JobListings entity
 
-  @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
-  assigned_vendor!: Vendor | null;
+   @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
+  assignedVendor!: Vendor | null;
 
   
 @OneToMany(() => Bid, (b) => b.job, { cascade: false })
 bids!: Bid[];
 }
+
+

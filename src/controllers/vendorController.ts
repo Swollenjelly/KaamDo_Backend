@@ -239,7 +239,7 @@ export const vendorController = {
             const assignedJob = await jobRepo.find({
                 where: { 
                     status: "assigned",
-                    assigned_vendor : {id: vendorId} 
+                    assignedVendor : {id: vendorId} 
                 },
                 relations: ["job_item", "user"]
             })
