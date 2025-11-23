@@ -156,8 +156,6 @@ export const vendorController = {
                 })
             }
 
-            const { name, phone, email, password, gender, location, preferredWorkLocation, vendorType, documentType } = req.body
-
             const vendorRepo = AppDataSource.getRepository(Vendor)
             const vendor = await vendorRepo.findOne({ where: { id: vendorId } })
             if (!vendor) {
@@ -166,23 +164,10 @@ export const vendorController = {
                 })
             }
 
-            if (name) vendor.name = name;
-            if (phone) vendor.phone = phone;
-            if (email) vendor.email = email;
-            if (password) {
-                const hashPass = await bcrypt.hash(password, 10)
-                vendor.password = hashPass
-            } // ideally hash before saving
-            if (gender) vendor.gender = gender;
-            if (location) vendor.location = location;
-            if (preferredWorkLocation) vendor.preferredWorkLocation = preferredWorkLocation;
-            if (vendorType) vendor.vendorType = vendorType;
-            if (documentType) vendor.documentType = documentType;
-
-            await vendorRepo.save(vendor)
+            const updatedUser = await vendorRepo.save({id:vendor.id, ...req.body})
 
             return res.status(200).json({
-                data: vendor
+                data: updatedUser
             })
 
         } catch (error) {
@@ -281,9 +266,7 @@ export const vendorController = {
         try {
 
             // get the job id from the routes
-            const jobId = req.params.jobId
-            // convert the id into number
-            const jobNumber = Number(jobId)
+            const jobId = Number(req.params.jobId)
 
             const vendorId = (req as any).vendorId
 
@@ -291,12 +274,11 @@ export const vendorController = {
 
             const jobRepo = AppDataSource.getRepository(JobListings)
             const bidRepo = AppDataSource.getRepository(Bid)
-            const vendorRepo = AppDataSource.getRepository(Vendor)
 
             // check if the job exist 
             const findJob = await jobRepo.findOne({
                 where: {
-                    id: jobNumber
+                    id: jobId
                 }
             })
             if (!findJob) {
@@ -305,21 +287,10 @@ export const vendorController = {
                 })
             }
 
-            // check if the vendor exists 
-            const findVendor = await vendorRepo.findOne({
-                where:
-                    { id: vendorId }
-            })
-            if (!findVendor) {
-                return res.status(400).json({
-                    message: "Vendor not found"
-                })
-            }
-
             // check if the vendor has already placed the bid once because once placed cannot bid again 
             const existingBid = await bidRepo.findOne({
                 where: {
-                    job: { id: jobNumber },
+                    job: { id: jobId },
                     vendor: { id: vendorId }
                 }
             })
