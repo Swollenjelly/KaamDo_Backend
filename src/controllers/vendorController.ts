@@ -234,7 +234,7 @@ export const vendorController = {
 
         } catch (error) {
             res.status(500).json({
-                message: "Unable to load jobs at the moment",
+                message: "Unable to load jobs at the moment.",
                 data: error
             })
         }
