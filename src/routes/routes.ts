@@ -54,5 +54,7 @@ router.post("/vendorUpdate", vendorController.updateVendor)
 router.get("/jobListing", vendorController.jobListing)
 router.post("/placeBid/:jobId", vendorController.placeBid)
 router.get("/assigned-jobs", vendorController.assignedJob)
+router.put("/completeJob/:jobId", vendorController.jobCompleted)
+router.get("/completedJob", vendorController.completedJob)
 
 export default router;
