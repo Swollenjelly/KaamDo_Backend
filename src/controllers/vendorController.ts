@@ -196,9 +196,19 @@ export const vendorController = {
     async jobListing(req: Request, res: Response) {
         try {
 
+            const { city } = req.query
             const jobRepo = AppDataSource.getRepository(JobListings)
+
+            const whereCondition:any = {
+                status: "open"
+            }
+
+            if(city && city !== "all"){
+                whereCondition.city = city
+            }
+
             const openJobs = await jobRepo.find({
-                where: { status: "open" },
+                where: whereCondition,
                 relations: ["job_item", "user"],
                 // to get the latest job first in desecending order
                 order: {
