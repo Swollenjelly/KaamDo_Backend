@@ -47,6 +47,13 @@ scheduled_time!: string | null;
   
 @OneToMany(() => Bid, (b) => b.job, { cascade: false })
 bids!: Bid[];
+
+@Column({ type: "int", nullable: true })
+  customer_rating!: number | null;   // 1–5
+
+  @Column({ type: "text", nullable: true })
+  customer_review!: string | null;   // review text
+  
 }
 
 

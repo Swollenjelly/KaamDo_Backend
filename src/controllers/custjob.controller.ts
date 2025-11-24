@@ -30,6 +30,11 @@ const jobListQuerySchem = z.object({
 
 })
 
+const reviewBodySchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().min(3).max(2000),
+});
+
 function toDateOrNull(s?: string) {
     return s ? new Date(s) : null;
 }
@@ -89,9 +94,8 @@ export const customerController = {
         }
     },
 
-    // src/controllers/custjob.controller.ts
 
-  async viewJob(req: Request & { userId?: number }, res: Response) {
+    async viewJob(req: Request & { userId?: number }, res: Response) {
   const userId = req.userId!;
   const page = Number(req.query.page ?? 1);
   const pageSize = Number(req.query.pageSize ?? 10);
@@ -129,7 +133,50 @@ export const customerController = {
   });
 
   res.json({ data, total, page, pageSize });
-  },
+    },
+
+    async addReview(req: Request & { userId?: number }, res: any, next: NextFunction) {
+    try {
+      const { jobId } = JobIdParams.parse(req.params);
+      const { rating, comment } = reviewBodySchema.parse(req.body);
+
+      const jobRepo = AppDataSource.getRepository(JobListings);
+
+      const job = await jobRepo.findOne({
+        where: { id: jobId },
+        relations: { user: true },
+      });
+
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      const userId = req.userId ?? (req as any).userId;
+      if (!userId || job.user.id !== userId) {
+        return res.status(403).json({ message: "Not your job" });
+      }
+
+      if (job.status !== ("completed" as any)) {
+        return res
+          .status(400)
+          .json({ message: "You can review only completed jobs" });
+      }
+
+      job.customer_rating = rating;
+      job.customer_review = comment;
+
+      await jobRepo.save(job);
+
+      return res.json({
+        message: "Review saved",
+        jobId: job.id,
+        rating,
+        comment,
+      });
+    } catch (err) {
+      next(err);
+    }
+    },
 
 };
 
@@ -139,37 +186,43 @@ const BidIdParams = z.object({ bidId: z.coerce.number().int().positive() });
 
 export const bidController = {
   // 1) Fetch bids for a job (only if the logged-in user owns the job)
-  async getBidsForJob(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { jobId } = JobIdParams.parse(req.params);
+  async getBidsForJob(req: Request, res: any, next: NextFunction) {
+  try {
+    const { jobId } = JobIdParams.parse(req.params);
 
-      const jobRepo = AppDataSource.getRepository(JobListings);
-      const bidRepo = AppDataSource.getRepository(Bid);
+    const jobRepo = AppDataSource.getRepository(JobListings);
+    const bidRepo = AppDataSource.getRepository(Bid);
 
-      // confirm ownership
-      const job = await jobRepo.findOne({
-        where: { id: jobId },
-        relations: { user: true },
-      });
-      if (!job) return res.status(404).json({ message: "Job not found" });
+    const job = await jobRepo.findOne({
+      where: { id: jobId },
+      relations: { user: true },
+    });
+    if (!job) return res.status(404).json({ message: "Job not found" });
 
-      
-      const userId = (req as any).userId;
-      if (!userId || job.user.id !== userId) {
-        return res.status(403).json({ message: "Not your job" });
-      }
-
-      const bids = await bidRepo.find({
-        where: { job: { id: jobId } },
-        relations: { vendor: true },
-        order: { created_at: "DESC" },
-      });
-
-      return res.json({ bids });
-    } catch (err) {
-      next(err);
+    const userId = (req as any).userId;
+    if (!userId || job.user.id !== userId) {
+      return res.status(403).json({ message: "Not your job" });
     }
-  },
+
+    const bids = await bidRepo.find({
+      where: { job: { id: jobId } },
+      relations: { vendor: true },
+      order: { created_at: "DESC" },
+    });
+
+    return res.json({
+      job: {
+        id: job.id,
+        status: job.status,
+        customer_rating: (job as any).customer_rating ?? null,
+        customer_review: (job as any).customer_review ?? null,
+      },
+      bids,
+    });
+  } catch (err) {
+    next(err);
+  }
+},
 
   // 2) Accept one bid -> reject all others for the same job
   async acceptBid(req: Request, res: Response, next: NextFunction) {
@@ -265,4 +318,6 @@ return res.json({ message: "Bid accepted; others rejected", acceptedBidId: bid.i
       next(err);
     }
   },
+
+  
   };

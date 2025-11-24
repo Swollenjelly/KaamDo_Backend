@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
 
 export type gender = "male" | "female" | "other";
 
@@ -27,4 +27,8 @@ export class User {
 
     @Column()
     location!: string;
+
+    @CreateDateColumn({ type: "timestamptz" })
+    createdAt!: Date;
+
 }

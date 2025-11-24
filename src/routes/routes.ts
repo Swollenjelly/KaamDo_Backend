@@ -38,6 +38,9 @@ router.get("/viewJob", customerController.viewJob);
 router.get("/jobs/:jobId/bids", bidController.getBidsForJob);
 router.post("/bids/:bidId/accept", bidController.acceptBid);
 router.post("/bids/:bidId/reject", bidController.rejectBid);
+router.get("/jobs/:jobId/bids", bidController.getBidsForJob);
+router.post("/jobs/:jobId/review", customerController.addReview
+);
 
 
 
