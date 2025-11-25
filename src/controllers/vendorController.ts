@@ -156,8 +156,6 @@ export const vendorController = {
                 })
             }
 
-            const { name, phone, email, password, gender, location, preferredWorkLocation, vendorType, documentType } = req.body
-
             const vendorRepo = AppDataSource.getRepository(Vendor)
             const vendor = await vendorRepo.findOne({ where: { id: vendorId } })
             if (!vendor) {
@@ -166,23 +164,10 @@ export const vendorController = {
                 })
             }
 
-            if (name) vendor.name = name;
-            if (phone) vendor.phone = phone;
-            if (email) vendor.email = email;
-            if (password) {
-                const hashPass = await bcrypt.hash(password, 10)
-                vendor.password = hashPass
-            } // ideally hash before saving
-            if (gender) vendor.gender = gender;
-            if (location) vendor.location = location;
-            if (preferredWorkLocation) vendor.preferredWorkLocation = preferredWorkLocation;
-            if (vendorType) vendor.vendorType = vendorType;
-            if (documentType) vendor.documentType = documentType;
-
-            await vendorRepo.save(vendor)
+            const updatedUser = await vendorRepo.save({id:vendor.id, ...req.body})
 
             return res.status(200).json({
-                data: vendor
+                data: updatedUser
             })
 
         } catch (error) {
@@ -255,6 +240,7 @@ export const vendorController = {
             })
 
             const formattedOutput = assignedJob.map((data) => ({
+                jobId: data.id,
                 jobName: data.job_item?.name,
                 jobDetails: data.details,
                 postedBy: data.user?.name,
@@ -347,6 +333,74 @@ export const vendorController = {
         } catch (error) {
             next(error)
         }
+    },
+
+    // change status to completed
+    async jobCompleted(req:Request, res:Response, next:NextFunction){
+
+        try {
+            
+            const jobId = Number(req.params.jobId)
+            const vendorId = (req as any).vendorId 
+            
+            const jobRepo = AppDataSource.getRepository(JobListings)
+
+            const job = await jobRepo.findOne({
+                where : {
+                    id: jobId,
+                    assignedVendor: vendorId,
+                    status: "assigned"
+                }
+            })
+
+            if(!job){
+                return res.status(400).json({
+                    message: "Job not found or not available"
+                })
+            }
+
+            job.status = "completed"
+
+            await jobRepo.save(job)
+
+            return res.status(200).json({
+                message: "Job completed"
+            })
+
+        } catch (error) {
+            
+        }
+
+    },
+
+    async completedJob(req:Request, res:Response, next:NextFunction){
+        
+        try {
+            
+            const jobRepo = AppDataSource.getRepository(JobListings)
+            const data = await jobRepo.find({
+                where: {
+                    status: "completed"
+                },
+                relations: ["job_item", "user", "bids"]
+            })
+
+            const formattedOutput = data.map((item)=>({
+                jobName: item?.job_item.name,
+                customerName: item?.user.name,
+                customerPhoneNumber: item?.user.phone,
+                jobDate: item.scheduled_date
+            }))
+
+            return res.status(200).json({
+                message: "Completed jobs fetched",
+                data: formattedOutput
+            })
+
+        } catch (error) {
+            next(error)
+        }
+
     }
 
 }
