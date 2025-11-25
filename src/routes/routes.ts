@@ -9,9 +9,31 @@ import { requireAuth } from "../middleware/auth";
 import {jobController} from "../controllers/job.controller";
 import { bidController, customerController } from "../controllers/custjob.controller";
 import { vendorAuth } from "../middleware/vendorAuth";
-
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = Router();
+
+const uploadDir = path.join(process.cwd(), "uploads", "profile");
+
+// make sure directory exists (mkdir -p)
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req: any, file, cb) => {
+    const ext = path.extname(file.originalname) || ".png";
+    cb(null, `user-${req.userId || Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// profile routes
+
 
 // user routes
 
@@ -39,8 +61,10 @@ router.get("/jobs/:jobId/bids", bidController.getBidsForJob);
 router.post("/bids/:bidId/accept", bidController.acceptBid);
 router.post("/bids/:bidId/reject", bidController.rejectBid);
 router.get("/jobs/:jobId/bids", bidController.getBidsForJob);
-router.post("/jobs/:jobId/review", customerController.addReview
-);
+router.post("/jobs/:jobId/review", customerController.addReview);
+router.get("/profile", authenticationController.getProfile);
+router.post("/profile/avatar", upload.single("avatar"),authenticationController.uploadProfilePicture);
+
 
 
 
