@@ -7,6 +7,7 @@ import { JobListings } from "../entities/job-listing";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt"
+import { MoreThanOrEqual } from "typeorm";
 
 const vendorRegisterSchema = z.object({
     name: z.string().min(3).max(30),
@@ -185,7 +186,8 @@ export const vendorController = {
             const jobRepo = AppDataSource.getRepository(JobListings)
 
             const whereCondition:any = {
-                status: "open"
+                status: "open",
+                scheduled_date: MoreThanOrEqual(new Date())
             }
 
             if(city && city !== "all"){
