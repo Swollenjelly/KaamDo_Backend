@@ -16,6 +16,11 @@ app.use(
 );
 app.use(errorHandler);
 
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
+);
+
 (async () => {
     await AppDataSource.initialize()
   .then(() => {

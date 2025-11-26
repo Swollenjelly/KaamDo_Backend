@@ -31,4 +31,6 @@ export class User {
     @CreateDateColumn({ type: "timestamptz" })
     createdAt!: Date;
 
+    @Column({ type: "varchar", length: 255, nullable: true })
+    profileImageUrl!: string | null;
 }

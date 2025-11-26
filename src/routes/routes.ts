@@ -15,15 +15,12 @@ import fs from "fs";
 
 const router = Router();
 
+// ---------- Multer config ----------
 const uploadDir = path.join(process.cwd(), "uploads", "profile");
-
-// make sure directory exists (mkdir -p)
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req: any, file, cb) => {
     const ext = path.extname(file.originalname) || ".png";
     cb(null, `user-${req.userId || Date.now()}${ext}`);
@@ -31,7 +28,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
 // profile routes
 
 

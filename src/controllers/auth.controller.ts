@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/user";
+import { Vendor } from "../entities/vendor";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env as ENV } from "../config/env";
+import { DeepPartial } from "typeorm";
+import { parse } from "path";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(40),
@@ -28,7 +31,6 @@ export const authenticationController = {
 
       const userRepo = AppDataSource.getRepository(User);
 
-      // Check if phone already exists
       const existingUser = await userRepo.findOne({ where: [{ phone }] });
       if (existingUser) {
         return res.status(409).json({
@@ -36,10 +38,8 @@ export const authenticationController = {
         });
       }
 
-      // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Create user
       const newUser = userRepo.create({
         name,
         phone,
@@ -101,7 +101,7 @@ export const authenticationController = {
     }
   },
 
-  // -------- NEW: get current user profile --------
+  // ---------- GET PROFILE ----------
   async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).userId;
@@ -116,13 +116,13 @@ export const authenticationController = {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const profileImagePath = (user as any).profileImagePath as
-        | string
-        | null
-        | undefined;
+      // Convert stored relative path -> full URL for frontend
+      const fullImageUrl = user.profileImageUrl
+        ? `${req.protocol}://${req.get("host")}${user.profileImageUrl}`
+        : null;
 
-      return res.status(200).json({
-        message: "Profile fetched",
+      return res.json({
+        message: "Profile loaded",
         data: {
           id: user.id,
           name: user.name,
@@ -130,9 +130,7 @@ export const authenticationController = {
           email: user.email,
           gender: user.gender,
           location: user.location,
-          profileImageUrl: profileImagePath
-            ? `/uploads/profile/${profileImagePath}`
-            : null,
+          profileImageUrl: fullImageUrl,
         },
       });
     } catch (error) {
@@ -140,25 +138,7 @@ export const authenticationController = {
     }
   },
 
-  // -------- delete user (already used by your frontend) --------
-  async deleteuser(req: Request, res: Response, next: NextFunction) {
-    try {
-      const userId = (req as any).userId;
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const userRepo = AppDataSource.getRepository(User);
-
-      const result = await userRepo.delete({ id: userId });
-      if (result.affected === 0) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      return res.status(200).json({ message: "Profile deleted" });
-    } catch (error) {
-      next(error);
-    }
-  },
-
+  // ---------- UPDATE PROFILE ----------
   async updateuser(req: Request, res: Response, next: NextFunction) {
     console.log("updateuser called");
     console.log("Request body:", req.body);
@@ -178,7 +158,7 @@ export const authenticationController = {
 
       if (name) user.name = name;
       if (phone) user.phone = phone;
-      if (email !== undefined) user.email = email || null;
+      if (email) user.email = email;
       if (gender) user.gender = gender;
       if (location) user.location = location;
       if (password) {
@@ -204,7 +184,7 @@ export const authenticationController = {
     }
   },
 
-  // -------- NEW: upload profile picture --------
+  // ---------- UPLOAD PROFILE PICTURE ----------
   async uploadProfilePicture(
     req: Request,
     res: Response,
@@ -228,14 +208,37 @@ export const authenticationController = {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // store only the filename in DB, under a flexible field
-      (user as any).profileImagePath = file.filename;
+      // We store a RELATIVE path in DB
+      const relativePath = `/uploads/profile/${file.filename}`;
+      user.profileImageUrl = relativePath;
+
       await userRepo.save(user);
 
-      return res.status(200).json({
-        message: "Profile picture updated",
-        imageUrl: `/uploads/profile/${file.filename}`,
+      const fullUrl = `${req.protocol}://${req.get("host")}${relativePath}`;
+
+      return res.json({
+        message: "Avatar uploaded",
+        imageUrl: fullUrl,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ---------- DELETE USER ----------
+  async deleteuser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const userRepo = AppDataSource.getRepository(User);
+
+      const result = await userRepo.delete({ id: userId });
+      if (result.affected === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      return res.status(200).json({ message: "Profile deleted" });
     } catch (error) {
       next(error);
     }

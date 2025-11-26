@@ -103,46 +103,47 @@ export const customerController = {
   },
 
   async viewJob(req: Request & { userId?: number }, res: Response) {
-    const userId = req.userId!;
-    const page = Number(req.query.page ?? 1);
-    const pageSize = Number(req.query.page ?? 10);
-    const status = String(req.query.status ?? "open") as any;
+  const userId = req.userId!;
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 10);  // ✅ use pageSize
 
-    const repo = AppDataSource.getRepository(JobListings);
+  const status = String(req.query.status ?? "open") as any;
 
-    const [rows, total] = await repo.findAndCount({
-      where: { user: { id: userId }, status },
-      relations: { job_item: { parent: true } },
-      order: { id: "DESC" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+  const repo = AppDataSource.getRepository(JobListings);
 
-    const data = rows.map((r) => {
-      const ji = r.job_item;
-      const isSub = ji?.kind === "sub-category";
-      const categoryName = isSub ? ji?.parent?.name ?? "" : ji?.name ?? "";
-      const subCategoryName = isSub ? ji?.name ?? "" : "";
+  const [rows, total] = await repo.findAndCount({
+    where: { user: { id: userId }, status },
+    relations: { job_item: { parent: true } },
+    order: { id: "DESC" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
 
-      return {
-        id: r.id,
-        details: r.details ?? "",
-        city: r.city ?? "",
-        status: r.status,
-        scheduled_date: (r as any).scheduled_date ?? null,
-        scheduled_time: (r as any).scheduled_time ?? null,
-        jobItemId: ji?.id ?? null,
-        categoryName,
-        subCategoryName,
-        createdAt: (r as any).createdAt ?? null,
+  const data = rows.map((r) => {
+    const ji = r.job_item;
+    const isSub = ji?.kind === "sub-category";
+    const categoryName = isSub ? ji?.parent?.name ?? "" : ji?.name ?? "";
+    const subCategoryName = isSub ? ji?.name ?? "" : "";
 
-        customer_rating: (r as any).customer_rating ?? null,
-        customer_review: (r as any).customer_review ?? null,
-      };
-    });
+    return {
+      id: r.id,
+      details: r.details ?? "",
+      city: r.city ?? "",
+      status: r.status,
+      scheduled_date: (r as any).scheduled_date ?? null,
+      scheduled_time: (r as any).scheduled_time ?? null,
+      jobItemId: ji?.id ?? null,
+      categoryName,
+      subCategoryName,
+      createdAt: (r as any).createdAt ?? null,
+      customer_rating: (r as any).customer_rating ?? null,
+      customer_review: (r as any).customer_review ?? null,
+    };
+  });
 
-    res.json({ data, total, page, pageSize });
-  },
+  res.json({ data, total, page, pageSize });
+},
+
 
   async addReview(
     req: Request & { userId?: number },
