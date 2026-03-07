@@ -50,6 +50,11 @@ export const authenticationController = {
       });
       await userRepo.save(newUser);
 
+      const token = jwt.sign({ role: "user" }, ENV.JWT_SECRET, {
+        subject: String(newUser.id),
+        expiresIn: "2h",
+      });
+
       res.status(201).json({
         message: "User registered successfully",
         data: {
@@ -59,6 +64,7 @@ export const authenticationController = {
           email: newUser.email,
           gender: newUser.gender,
           location: newUser.location,
+          token,
         },
       });
     } catch (error) {
@@ -81,7 +87,7 @@ export const authenticationController = {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const token = jwt.sign({}, ENV.JWT_SECRET, {
+      const token = jwt.sign({ role: "user" }, ENV.JWT_SECRET, {
         subject: String(user.id),
         expiresIn: "2h",
       });
@@ -96,6 +102,72 @@ export const authenticationController = {
           token,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ---------- GET UNIFIED PROFILE (/api/me) ----------
+  async getMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const auth = req.headers.authorization;
+      if (!auth?.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Missing or invalid Authorization header" });
+      }
+
+      const token = auth.slice(7);
+      const payload = jwt.verify(token, ENV.JWT_SECRET) as jwt.JwtPayload;
+
+      const id = Number(payload.sub);
+      const role = payload.role;
+
+      if (!id || Number.isNaN(id) || !role) {
+        return res.status(401).json({ message: "Invalid token payload" });
+      }
+
+      if (role === 'user') {
+        const userRepo = AppDataSource.getRepository(User);
+        const user = await userRepo.findOne({ where: { id } });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const fullImageUrl = user.profileImageUrl
+          ? `${req.protocol}://${req.get("host")}${user.profileImageUrl}`
+          : null;
+
+        return res.json({
+          message: "Profile loaded",
+          role: "user",
+          data: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            gender: user.gender,
+            location: user.location,
+            profileImageUrl: fullImageUrl,
+          },
+        });
+      } else if (role === 'vendor') {
+        const vendorRepo = AppDataSource.getRepository(Vendor);
+        const vendor = await vendorRepo.findOne({ where: { id } });
+        if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+        return res.json({
+          message: "Profile loaded",
+          role: "vendor",
+          data: {
+            id: vendor.id,
+            name: vendor.name,
+            phone: vendor.phone,
+            email: vendor.email,
+            gender: vendor.gender,
+            location: vendor.location,
+            vendorType: vendor.vendorType
+          },
+        });
+      } else {
+        return res.status(401).json({ message: "Invalid role in token" });
+      }
     } catch (error) {
       next(error);
     }

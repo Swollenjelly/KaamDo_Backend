@@ -1,13 +1,7 @@
 import { z } from "zod";
 import { Request, Response, NextFunction } from "express";
-import { AppDataSource } from "../config/data-source";
-import { Vendor } from "../entities/vendor";
-import { Bid } from "../entities/bid";
-import { JobListings } from "../entities/job-listing";
-import jwt from "jsonwebtoken";
-import { env } from "../config/env";
-import bcrypt from "bcrypt"
-import { MoreThanOrEqual } from "typeorm";
+import { vendorService } from "../services/vendor.service";
+import { bidService } from "../services/bid.service";
 
 const vendorRegisterSchema = z.object({
     name: z.string().min(3).max(30),
@@ -33,58 +27,19 @@ const vendorLoginSchema = z.object({
 });
 
 export const vendorController = {
-
     // vendor register controller
     async registerVendor(req: Request, res: Response, next: NextFunction) {
         try {
-            const {
-                name,
-                phone,
-                email,
-                password,
-                gender,
-                location,
-                preferredWorkLocation,
-                vendorType,
-                documentType,
-            } = vendorRegisterSchema.parse(req.body);
-
-            //await getRepo
-            const vendorRepo = AppDataSource.getRepository(Vendor);
-
-            const existingVendor = await vendorRepo.findOne({
-                where: [{ phone }],
+            const body = vendorRegisterSchema.parse(req.body);
+            const result = await vendorService.registerVendor(body);
+            return res.status(201).json({
+                message: "Vendor registered successfully",
+                data: result
             });
-
-            if (existingVendor) {
-                return res
-                    .status(409)
-                    .json({ message: "Vendor with this phone number already exists" });
+        } catch (error: any) {
+            if (error.message === "Vendor with this phone number already exists") {
+                return res.status(409).json({ message: error.message });
             }
-
-            const hashedPass = await bcrypt.hash(password, 10);
-
-            // const documentFile = req.file ? req.file.filename : null
-
-            const newVendor = vendorRepo.create({
-                name,
-                phone,
-                email: email || null,
-                password: hashedPass,
-                gender,
-                location,
-                preferredWorkLocation,
-                vendorType,
-                documentType,
-                // documentFile
-            });
-
-            // multer
-
-            await vendorRepo.save(newVendor);
-
-            return res.status(200).json({ message: newVendor });
-        } catch (error) {
             next(error);
         }
     },
@@ -92,34 +47,16 @@ export const vendorController = {
     // vendor login controller
     async loginVendor(req: Request, res: Response, next: NextFunction) {
         try {
-            const { phone, password } = vendorLoginSchema.parse(req.body);
-            const vendorRepo = AppDataSource.getRepository(Vendor);
-            const vendor = await vendorRepo.findOne({ where: { phone } });
-
-            if (!vendor) {
-                return res.status(404).json({ message: "Vendor not found" });
-            }
-
-            const valid = await bcrypt.compare(password, vendor.password);
-            if (!valid) {
-                return res.status(401).json({ message: "Invalid credentials" });
-            }
-
-            // Put the id into the standard subject (as string)
-            const token = jwt.sign(
-                {},
-                env.JWT_SECRET,
-                { subject: String(vendor.id), expiresIn: "2h" }
-            );
+            const body = vendorLoginSchema.parse(req.body);
+            const result = await vendorService.loginVendor(body);
 
             res.status(200).json({
                 message: "Vendor logged in successfully",
-                data: {
-                    vendor,
-                    token,
-                },
+                data: result,
             });
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === "Vendor not found") return res.status(404).json({ message: error.message });
+            if (error.message === "Invalid credentials") return res.status(401).json({ message: error.message });
             next(error);
         }
     },
@@ -127,283 +64,116 @@ export const vendorController = {
     // vendor delete controller
     async deleteVendor(req: Request, res: Response, next: NextFunction) {
         try {
-            // get the vendor id
-            const vendorId = (req as any).vendorId
-            console.log(vendorId)
-            const vendorRepo = AppDataSource.getRepository(Vendor);
-
-            const result = await vendorRepo.delete({ id: vendorId });
-
-            if (result.affected === 0) {
-                return res.status(404).json({ message: "Vendor not found" });
-            }
-
+            const vendorId = (req as any).vendorId;
+            await vendorService.deleteVendor(vendorId);
             return res.status(200).json({ message: "Vendor profile successfully deleted" });
-        } catch (error) {
-            next(error)
+        } catch (error: any) {
+            if (error.message === "Vendor not found") return res.status(404).json({ message: error.message });
+            next(error);
         }
     },
 
     // vendor data update controller 
     async updateVendor(req: Request, res: Response, next: NextFunction) {
-
         try {
+            const vendorId = (req as any).vendorId;
+            if (!vendorId) return res.status(400).json({ message: "Invalid request" });
 
-            // get the user id 
-            const vendorId = (req as any).vendorId
-            if (!vendorId) {
-                return res.status(400).json({
-                    message: "Invalid request"
-                })
-            }
-
-            const vendorRepo = AppDataSource.getRepository(Vendor)
-            const vendor = await vendorRepo.findOne({ where: { id: vendorId } })
-            if (!vendor) {
-                return res.status(400).json({
-                    message: "Invalid request"
-                })
-            }
-
-            const updatedUser = await vendorRepo.save({id:vendor.id, ...req.body})
-
-            return res.status(200).json({
-                data: updatedUser
-            })
-
-        } catch (error) {
-
-            next(error)
+            const updatedUser = await vendorService.updateVendor(vendorId, req.body);
+            return res.status(200).json({ data: updatedUser });
+        } catch (error: any) {
+            if (error.message === "Invalid request") return res.status(400).json({ message: error.message });
+            next(error);
         }
-
     },
 
     // job listing api to view all the job
     async jobListing(req: Request, res: Response) {
         try {
-
-            const { city } = req.query
-            const jobRepo = AppDataSource.getRepository(JobListings)
-
-            const whereCondition:any = {
-                status: "open",
-                scheduled_date: MoreThanOrEqual(new Date())
-            }
-
-            if(city && city !== "all"){
-                whereCondition.city = city
-            }
-
-            const openJobs = await jobRepo.find({
-                where: whereCondition,
-                relations: ["job_item", "user"],
-                // to get the latest job first in desecending order
-                order: {
-                    id: "DESC"
-                }
-            })
-
-            const formattedOutput = openJobs.map((job) => ({
-                jobId: job.id,
-                jobName: job.job_item?.name,
-                postedBy: job.user?.name,
-                location: job.city,
-                details: job.details,
-                schedule_date: job.scheduled_date,
-                schedule_time: job.scheduled_time
-            }))
-
+            const vendorId = (req as any).vendorId;
+            const city = req.query.city as string;
+            const formattedOutput = await vendorService.getOpenJobs(vendorId, city);
 
             res.status(200).json({
                 message: "Jobs fetched successfully",
                 data: formattedOutput
-            })
-
+            });
         } catch (error) {
             res.status(500).json({
                 message: "Unable to load jobs at the moment",
                 data: error
-            })
+            });
         }
     },
 
     async assignedJob(req: Request, res: Response) {
         try {
+            const vendorId = (req as any).vendorId;
+            const formattedOutput = await vendorService.getAssignedJobs(vendorId);
 
-            const vendorId = (req as any).vendorId
-
-            const jobRepo = AppDataSource.getRepository(JobListings)
-            const assignedJob = await jobRepo.find({
-                where: { 
-                    status: "assigned",
-                    assignedVendor : {id: vendorId} 
-                },
-                relations: ["job_item", "user"]
-            })
-
-            const formattedOutput = assignedJob.map((data) => ({
-                jobId: data.id,
-                jobName: data.job_item?.name,
-                jobDetails: data.details,
-                postedBy: data.user?.name,
-                customerPhoneNumber: data.user?.phone,
-                schedule_date: data.scheduled_date,
-                schedule_time: data.scheduled_time,
-                location: data.city
-            }))
             res.status(200).json({
                 message: "Jobs fetched successfully",
                 data: formattedOutput
-            })
-
+            });
         } catch (error) {
             res.status(500).json({
                 message: "Unable to load jobs at the moment",
                 data: error
-            })
+            });
         }
     },
 
     // place bid controller 
     async placeBid(req: Request, res: Response, next: NextFunction) {
         try {
+            const jobId = Number(req.params.jobId);
+            const vendorId = (req as any).vendorId;
 
-            // get the job id from the routes
-            const jobId = req.params.jobId
-            // convert the id into number
-            const jobNumber = Number(jobId)
+            if (!vendorId) return res.status(401).json({ message: "Unauthorized" });
 
-            const vendorId = (req as any).vendorId
-
-            const { amount, message } = req.body
-
-            const jobRepo = AppDataSource.getRepository(JobListings)
-            const bidRepo = AppDataSource.getRepository(Bid)
-            const vendorRepo = AppDataSource.getRepository(Vendor)
-
-            // check if the job exist 
-            const findJob = await jobRepo.findOne({
-                where: {
-                    id: jobNumber
-                }
-            })
-            if (!findJob) {
-                return res.status(400).json({
-                    message: "Job not found"
-                })
-            }
-
-            // check if the vendor exists 
-            const findVendor = await vendorRepo.findOne({
-                where:
-                    { id: vendorId }
-            })
-            if (!findVendor) {
-                return res.status(400).json({
-                    message: "Vendor not found"
-                })
-            }
-
-            // check if the vendor has already placed the bid once because once placed cannot bid again 
-            const existingBid = await bidRepo.findOne({
-                where: {
-                    job: { id: jobNumber },
-                    vendor: { id: vendorId }
-                }
-            })
-            if (existingBid) {
-                return res.status(400).json({
-                    message: "You have already placed the bet on this job"
-                })
-            }
-
-            const bid = bidRepo.create({
-                job: findJob,
-                vendor: vendorId,
-                amount,
-                message,
-                status: "open"
-            })
-
-            await bidRepo.save(bid)
+            const { amount, message } = req.body;
+            const bid = await bidService.placeBid(vendorId, jobId, amount, message);
 
             return res.status(200).json({
                 message: "Bid for the job has been placed successfully",
                 data: bid
-            })
-
-        } catch (error) {
-            next(error)
+            });
+        } catch (error: any) {
+            if (error.message === "Job not found" || error.message === "Vendor not found" || error.message === "You have already placed the bet on this job") {
+                return res.status(400).json({ message: error.message });
+            }
+            next(error);
         }
     },
 
     // change status to completed
-    async jobCompleted(req:Request, res:Response, next:NextFunction){
-
+    async jobCompleted(req: Request, res: Response, next: NextFunction) {
         try {
-            
-            const jobId = Number(req.params.jobId)
-            const vendorId = (req as any).vendorId 
-            
-            const jobRepo = AppDataSource.getRepository(JobListings)
+            const jobId = Number(req.params.jobId);
+            const vendorId = (req as any).vendorId;
 
-            const job = await jobRepo.findOne({
-                where : {
-                    id: jobId,
-                    assignedVendor: vendorId,
-                    status: "assigned"
-                }
-            })
+            await vendorService.completeJob(vendorId, jobId);
 
-            if(!job){
-                return res.status(400).json({
-                    message: "Job not found or not available"
-                })
+            return res.status(200).json({ message: "Job completed" });
+        } catch (error: any) {
+            if (error.message === "Job not found or not available") {
+                return res.status(400).json({ message: error.message });
             }
-
-            job.status = "completed"
-
-            await jobRepo.save(job)
-
-            return res.status(200).json({
-                message: "Job completed"
-            })
-
-        } catch (error) {
-            
+            next(error);
         }
-
     },
 
-    async completedJob(req:Request, res:Response, next:NextFunction){
-        
+    async completedJob(req: Request, res: Response, next: NextFunction) {
         try {
-            
-            const jobRepo = AppDataSource.getRepository(JobListings)
-            const data = await jobRepo.find({
-                where: {
-                    status: "completed"
-                },
-                relations: ["job_item", "user", "bids"]
-            })
-
-            const formattedOutput = data.map((item)=>({
-                jobName: item?.job_item.name,
-                customerName: item?.user.name,
-                customerPhoneNumber: item?.user.phone,
-                jobDate: item.scheduled_date
-            }))
+            const vendorId = (req as any).vendorId;
+            const formattedOutput = await vendorService.getCompletedJobs(vendorId);
 
             return res.status(200).json({
                 message: "Completed jobs fetched",
                 data: formattedOutput
-            })
-
+            });
         } catch (error) {
-            next(error)
+            next(error);
         }
-
     }
-
-}
-
+};

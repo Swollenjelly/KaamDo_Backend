@@ -30,14 +30,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 		return res.status(401).json({ message: "Missing or invalid Authorization header" });
 	}
 
-	
+
 
 	const token = auth.slice(7);
 	const payload = jwt.verify(token, ENV.JWT_SECRET) as jwt.JwtPayload; // sub?: string
 
 	const userId = Number(payload.sub);
-	if (!payload.sub || Number.isNaN(userId)) {
-		return res.status(401).json({ message: "Invalid token payload" });
+	if (!payload.sub || Number.isNaN(userId) || payload.role !== "user") {
+		return res.status(401).json({ message: "Invalid user token" });
 	}
 
 	(req as any).userId = userId;
