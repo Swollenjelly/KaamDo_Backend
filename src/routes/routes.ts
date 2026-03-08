@@ -5,6 +5,7 @@ import { authenticationController } from "../controllers/auth.controller";
 
 // all the "vendor" controller here 
 import { vendorController } from "../controllers/vendorController";
+import { socialAuthController } from "../controllers/socialAuthController";
 import { requireAuth } from "../middleware/auth";
 import { jobController } from "../controllers/job.controller";
 import { bidController, customerController } from "../controllers/custjob.controller";
@@ -47,6 +48,9 @@ router.get("/job-item", jobController.listJobItems);
 router.post("/vendorRegister", vendorController.registerVendor)
 router.post("/vendorLogin", vendorController.loginVendor)
 
+// social auth routes
+router.post("/auth/social/login", socialAuthController.login);
+
 // ================= PROTECTED USER ROUTES =================
 router.post("/Delete_user", requireAuth, authenticationController.deleteuser);
 router.put("/updateuser", requireAuth, authenticationController.updateuser);
@@ -58,6 +62,7 @@ router.post("/bids/:bidId/reject", requireAuth, bidController.rejectBid);
 router.post("/jobs/:jobId/review", requireAuth, customerController.addReview);
 router.get("/profile", requireAuth, authenticationController.getProfile);
 router.post("/profile/avatar", requireAuth, upload.single("avatar"), authenticationController.uploadProfilePicture);
+router.post("/auth/social/complete-user-profile", requireAuth, socialAuthController.completeUserProfile);
 
 // ================= PROTECTED VENDOR ROUTES =================
 router.delete("/vendorDelete", vendorAuth, vendorController.deleteVendor);
@@ -67,5 +72,6 @@ router.post("/placeBid/:jobId", vendorAuth, vendorController.placeBid);
 router.get("/assigned-jobs", vendorAuth, vendorController.assignedJob);
 router.put("/completeJob/:jobId", vendorAuth, vendorController.jobCompleted);
 router.get("/completedJob", vendorAuth, vendorController.completedJob);
+router.post("/auth/social/complete-vendor-profile", vendorAuth, socialAuthController.completeVendorProfile);
 
 export default router;

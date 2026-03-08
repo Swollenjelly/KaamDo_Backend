@@ -57,6 +57,7 @@ export const vendorController = {
         } catch (error: any) {
             if (error.message === "Vendor not found") return res.status(404).json({ message: error.message });
             if (error.message === "Invalid credentials") return res.status(401).json({ message: error.message });
+            if (error.message === "Please sign in using your social account (Google/Apple).") return res.status(401).json({ message: error.message });
             next(error);
         }
     },
