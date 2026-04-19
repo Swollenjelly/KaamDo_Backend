@@ -6,7 +6,7 @@ export class CustJobService {
     /**
      * Creates a new job listing
      */
-    async createJob(userId: number, body: any) {
+    async createJob(userId: number, body: any, imageUrls?: string[]) {
         return await AppDataSource.transaction(async (manager) => {
             const item = await manager.findOne(JobItem, {
                 where: { id: body.jobTaskId },
@@ -29,6 +29,7 @@ export class CustJobService {
                 scheduled_date: body.scheduled_date ?? null,
                 scheduled_time: body.scheduled_time ?? null,
                 status: "open",
+                imageUrls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
             });
 
             await manager.save(listing);

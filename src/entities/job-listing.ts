@@ -5,7 +5,7 @@ import { Vendor } from "./vendor";
 import { OneToMany } from "typeorm";
 import { Bid } from "./bid";
 
-export type JobStatus = 'open'|'assigned'|'in_progress'|'completed'|'cancelled'|'draft';
+export type JobStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'draft';
 
 @Entity({ name: "job_listings" })
 export class JobListings {
@@ -29,31 +29,33 @@ export class JobListings {
   @Column({ type: "varchar", length: 10, nullable: true })
   pincode!: string | null;
 
-@Column({ type: "date", nullable: true })
-scheduled_date!: string | null;
+  @Column({ type: "date", nullable: true })
+  scheduled_date!: string | null;
 
-@Column({ type: "time", nullable: true })  // <- change from timestamptz
-scheduled_time!: string | null;
+  @Column({ type: "time", nullable: true })  // <- change from timestamptz
+  scheduled_time!: string | null;
 
+  @Column("simple-array", { nullable: true })
+  imageUrls!: string[] | null;
 
   @Column({ type: "text", default: "open" })
   status!: JobStatus;
 
   // in JobListings entity
 
-   @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
+  @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })
   assignedVendor!: Vendor | null;
 
-  
-@OneToMany(() => Bid, (b) => b.job, { cascade: false })
-bids!: Bid[];
 
-@Column({ type: "int", nullable: true })
+  @OneToMany(() => Bid, (b) => b.job, { cascade: false })
+  bids!: Bid[];
+
+  @Column({ type: "int", nullable: true })
   customer_rating!: number | null;   // 1–5
 
   @Column({ type: "text", nullable: true })
   customer_review!: string | null;   // review text
-  
+
 }
 
 

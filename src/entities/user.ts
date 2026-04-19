@@ -10,23 +10,40 @@ export class User {
     @Column()
     name!: string;
 
-    @Column({ type: 'varchar', length: 15, unique: true })
-    phone!: string;
+    @Column({ type: 'varchar', length: 15, unique: true, nullable: true })
+    phone!: string | null;
 
     @Column({ type: "varchar", length: 100, nullable: true })
-    email!: string|null;
+    email!: string | null;
 
-    @Column()
-    passwordHash!: string;
+    @Column({ type: "varchar", nullable: true })
+    passwordHash!: string | null;
 
     @Column({
-            type: "enum",
-            enum: ["male", "female", "other"],
-        })
-        gender!: gender;
+        type: "enum",
+        enum: ["male", "female", "other"],
+        nullable: true
+    })
+    gender!: gender | null;
 
-    @Column()
-    location!: string;
+    @Column({ type: "varchar", nullable: true })
+    location!: string | null;
+
+    @Column({ type: "varchar", unique: true, nullable: true })
+    googleId!: string | null;
+
+    @Column({ type: "varchar", unique: true, nullable: true })
+    appleId!: string | null;
+
+    @Column({
+        type: "enum",
+        enum: ["local", "google", "apple"],
+        default: "local"
+    })
+    authProvider!: "local" | "google" | "apple";
+
+    @Column({ type: "boolean", default: false })
+    isProfileComplete!: boolean;
 
     @CreateDateColumn({ type: "timestamptz" })
     createdAt!: Date;

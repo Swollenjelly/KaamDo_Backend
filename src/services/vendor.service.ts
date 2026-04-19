@@ -48,6 +48,8 @@ export class VendorService {
 
         if (!vendor) throw new Error("Vendor not found");
 
+        if (!vendor.password) throw new Error("Please sign in using your social account (Google/Apple).");
+
         const valid = await bcrypt.compare(body.password, vendor.password);
         if (!valid) throw new Error("Invalid credentials");
 

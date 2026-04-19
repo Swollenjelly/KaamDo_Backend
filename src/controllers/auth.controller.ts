@@ -82,6 +82,10 @@ export const authenticationController = {
         return res.status(404).json({ message: "User not found" });
       }
 
+      if (!user.passwordHash) {
+        return res.status(401).json({ message: "Please sign in using your social account (Google/Apple)." });
+      }
+
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });

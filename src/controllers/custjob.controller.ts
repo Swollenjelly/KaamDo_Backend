@@ -5,11 +5,9 @@ import { bidService } from "../services/bid.service";
 
 // ---------- Zod Schemas ----------
 const createSchema = z.object({
-  jobTaskId: z.number().int().positive(),
-  details: z.string().min(3).max(5000).optional(),
-  city: z.string().min(2).max(100).optional(),
-  pincode: z.string().min(4).max(10).optional(),
-  scheduled_date: z.iso.date().optional(),
+  jobTaskId: z.coerce.number().int().positive(),
+  details: z.string().min(25).max(250).optional(),
+  scheduled_date: z.string().optional(),
   scheduled_time: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
@@ -31,8 +29,10 @@ export const customerController = {
       if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
       const body = createSchema.parse(req.body);
+      const files = req.files as Express.Multer.File[];
+      const imageUrls = files ? files.map(file => `/uploads/jobs/${file.filename}`) : [];
 
-      const { listing, item } = await custJobService.createJob(userId, body);
+      const { listing, item } = await custJobService.createJob(userId, body, imageUrls);
 
       return res.status(201).json({
         message: "Job created",
