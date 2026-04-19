@@ -29,6 +29,21 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+const uploadJobsDir = path.join(process.cwd(), "uploads", "jobs");
+fs.mkdirSync(uploadJobsDir, { recursive: true });
+
+const storageJobs = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadJobsDir),
+  filename: (req: any, file, cb) => {
+    const ext = path.extname(file.originalname) || ".png";
+    const timestamp = Date.now();
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+    cb(null, `job-${req.userId || 'user'}-${timestamp}-${sanitizedName}`);
+  },
+});
+
+const uploadJobs = multer({ storage: storageJobs });
 // profile routes
 router.get("/me", authenticationController.getMe);
 
@@ -38,7 +53,7 @@ router.get("/me", authenticationController.getMe);
 router.post("/register", authenticationController.register);
 router.post("/login", authenticationController.login);
 router.post("/job-item", jobController.createJobitem);
-router.post("/createJob", requireAuth, customerController.createJob);
+router.post("/createJob", requireAuth, uploadJobs.array('images', 5), customerController.createJob);
 router.get("/viewJob", requireAuth, customerController.viewJob)
 router.get("/job-item", jobController.listJobItems);
 // router.post("/welcome", (req, res) => {return res.status(200).send("Done")});
@@ -54,7 +69,7 @@ router.post("/auth/social/login", socialAuthController.login);
 // ================= PROTECTED USER ROUTES =================
 router.post("/Delete_user", requireAuth, authenticationController.deleteuser);
 router.put("/updateuser", requireAuth, authenticationController.updateuser);
-router.post("/createJob", requireAuth, customerController.createJob);
+router.post("/createJob", requireAuth, uploadJobs.array('images', 5), customerController.createJob);
 router.get("/viewJob", requireAuth, customerController.viewJob);
 router.get("/jobs/:jobId/bids", requireAuth, bidController.getBidsForJob);
 router.post("/bids/:bidId/accept", requireAuth, bidController.acceptBid);
