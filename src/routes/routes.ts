@@ -71,6 +71,7 @@ router.post("/Delete_user", requireAuth, authenticationController.deleteuser);
 router.put("/updateuser", requireAuth, authenticationController.updateuser);
 router.post("/createJob", requireAuth, uploadJobs.array('images', 5), customerController.createJob);
 router.get("/viewJob", requireAuth, customerController.viewJob);
+router.get("/jobs/:jobId/nearby-vendors", requireAuth, customerController.getNearbyVendors);
 router.get("/jobs/:jobId/bids", requireAuth, bidController.getBidsForJob);
 router.post("/bids/:bidId/accept", requireAuth, bidController.acceptBid);
 router.post("/bids/:bidId/reject", requireAuth, bidController.rejectBid);

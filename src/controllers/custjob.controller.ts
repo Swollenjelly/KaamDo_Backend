@@ -12,6 +12,13 @@ const createSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
     .optional(),
+  city: z.string().optional(),
+  pincode: z.string().optional(),
+  address: z.string().optional(),
+  latitude: z.preprocess((val) => (val ? parseFloat(val as string) : undefined), z.number().optional()),
+  longitude: z.preprocess((val) => (val ? parseFloat(val as string) : undefined), z.number().optional()),
+  placeId: z.string().optional(),
+  locality: z.string().optional(),
 });
 
 const reviewBodySchema = z.object({
@@ -91,6 +98,17 @@ export const customerController = {
       if (err.message === "Job not found") return res.status(404).json({ message: err.message });
       if (err.message === "Not your job") return res.status(403).json({ message: err.message });
       if (err.message === "You can review only completed jobs") return res.status(400).json({ message: err.message });
+      next(err);
+    }
+  },
+
+  async getNearbyVendors(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { jobId } = JobIdParams.parse(req.params);
+      const result = await custJobService.getNearbyVendorsForJob(jobId);
+      return res.json(result);
+    } catch (err: any) {
+      if (err.message === "Job not found or coordinates missing") return res.status(404).json({ message: err.message });
       next(err);
     }
   },
