@@ -1,6 +1,8 @@
 import { AppDataSource } from "../config/data-source";
 import { JobListings } from "../entities/job-listing";
 import { JobItem } from "../entities/job-item";
+import { Vendor } from "../entities/vendor";
+import { calculateHaversineDistance, getDistanceTier } from "../utils/distance";
 
 export class CustJobService {
     /**
@@ -30,6 +32,11 @@ export class CustJobService {
                 scheduled_time: body.scheduled_time ?? null,
                 status: "open",
                 imageUrls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
+                address: body.address ?? null,
+                latitude: body.latitude ?? null,
+                longitude: body.longitude ?? null,
+                placeId: body.placeId ?? null,
+                locality: body.locality ?? null,
             });
 
             await manager.save(listing);
@@ -103,6 +110,50 @@ export class CustJobService {
             await manager.save(job);
             return job;
         });
+    }
+
+    /**
+     * Finds nearby vendors for a job
+     */
+    async getNearbyVendorsForJob(jobId: number) {
+        const jobRepo = AppDataSource.getRepository(JobListings);
+        const vendorRepo = AppDataSource.getRepository(Vendor);
+
+        const job = await jobRepo.findOne({ where: { id: jobId } });
+        if (!job || job.latitude === null || job.longitude === null) {
+            throw new Error("Job not found or coordinates missing");
+        }
+
+        const vendors = await vendorRepo.find();
+
+        const vendorsWithDistance = vendors
+            .filter(v => v.baseLat !== null && v.baseLng !== null)
+            .map(v => {
+                const distance = calculateHaversineDistance(
+                    Number(job.latitude), Number(job.longitude),
+                    Number(v.baseLat), Number(v.baseLng)
+                );
+                return { ...v, distance, tier: getDistanceTier(distance) };
+            })
+            // Filter out those beyond their service radius
+            .filter(v => v.distance <= v.serviceRadiusKm);
+
+        // Sort by tier first, then by distance inside that tier
+        vendorsWithDistance.sort((a, b) => {
+            if (a.tier !== b.tier) return a.tier - b.tier; // 0 first, then 1, 2...
+            return a.distance - b.distance; 
+        });
+
+        return {
+            jobId: job.id,
+            jobLocation: { lat: job.latitude, lng: job.longitude, address: job.address },
+            nearbyVendors: vendorsWithDistance.map(v => ({
+                vendorId: v.id,
+                name: v.name,
+                distanceKm: Number(v.distance.toFixed(1)),
+                priorityTier: v.tier
+            }))
+        };
     }
 }
 

@@ -41,6 +41,21 @@ export class JobListings {
   @Column({ type: "text", default: "open" })
   status!: JobStatus;
 
+  @Column({ type: "text", nullable: true })
+  address!: string | null;
+
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+  latitude!: number | null;
+
+  @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+  longitude!: number | null;
+
+  @Column({ type: "varchar", length: 255, nullable: true })
+  placeId!: string | null;
+
+  @Column({ type: "varchar", length: 255, nullable: true })
+  locality!: string | null;
+
   // in JobListings entity
 
   @ManyToOne(() => Vendor, { nullable: true, onDelete: "SET NULL" })

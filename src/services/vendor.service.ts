@@ -5,6 +5,7 @@ import { MoreThanOrEqual } from "typeorm";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import bcrypt from "bcrypt";
+import { calculateHaversineDistance } from "../utils/distance";
 
 export class VendorService {
     /**
@@ -108,8 +109,19 @@ export class VendorService {
             order: { id: "DESC" },
         });
 
-        return openJobs.map((job) => {
+        const vendorRepo = AppDataSource.getRepository(Vendor);
+        const vendor = await vendorRepo.findOne({ where: { id: vendorId } });
+
+        const mappedJobs = openJobs.map((job) => {
             const hasBidded = job.bids?.some(bid => bid.vendor?.id === vendorId) || false;
+            let distance: number | null = null;
+
+            if (vendor && vendor.baseLat !== null && vendor.baseLng !== null && job.latitude !== null && job.longitude !== null) {
+                distance = calculateHaversineDistance(
+                    Number(job.latitude), Number(job.longitude),
+                    Number(vendor.baseLat), Number(vendor.baseLng)
+                );
+            }
 
             return {
                 jobId: job.id,
@@ -119,9 +131,23 @@ export class VendorService {
                 details: job.details,
                 schedule_date: job.scheduled_date,
                 schedule_time: job.scheduled_time,
-                hasBidded
+                hasBidded,
+                latitude: job.latitude,
+                longitude: job.longitude,
+                address: job.address,
+                distance: distance !== null ? Number(distance.toFixed(1)) : null
             };
         });
+
+        // Sort by distance (nearest first). If no distance, put them at the end.
+        mappedJobs.sort((a, b) => {
+             if (a.distance !== null && b.distance !== null) return a.distance - b.distance;
+             if (a.distance !== null) return -1;
+             if (b.distance !== null) return 1;
+             return 0; // if both are null, keep original order (which was DESC by id)
+        });
+
+        return mappedJobs;
     }
 
     /**

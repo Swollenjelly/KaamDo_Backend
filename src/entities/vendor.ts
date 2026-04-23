@@ -81,4 +81,13 @@ export class Vendor {
     @Column({ type: "varchar", length: 255, nullable: true })
     documentFile !: string | null;
 
+    @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+    baseLat!: number | null;
+
+    @Column({ type: "decimal", precision: 10, scale: 7, nullable: true })
+    baseLng!: number | null;
+
+    @Column({ type: "int", default: 10 })
+    serviceRadiusKm!: number;
+
 }
